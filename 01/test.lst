@@ -1,10 +1,160 @@
-P16 assembler v1.4.0 (Mar  6 2023)	/home/apoll011/coding/isel/asm/01/test.lst	Tue Mar 10 14:22:35 2026
+P16 assembler v1.4.0 (Mar  6 2023)	/home/apoll011/coding/isel/asm/01/test.lst	Thu Mar 12 12:10:57 2026
 
 Sections
 Index   Name            Address   Size
-0       .text           0000      0000 0
+0       .startup        0000      0010 16
+1       .stack          0010      0400 1024
+2       .data           0410      0016 22
+3       .text           0426      004C 76
 
 Symbols
 Name                    Type      Value       Section
+_start                  LABEL     0002 2      .startup
+addressof_main          LABEL     000E 14     .startup
+addressof_p             LABEL     0448 1096   .text
+addressof_q             LABEL     044A 1098   .text
+addressof_stack_top     LABEL     000C 12     .startup
+addressof_table1        LABEL     0444 1092   .text
+addressof_table2        LABEL     0446 1094   .text
+for                     LABEL     0452 1106   .text
+for_end                 LABEL     0460 1120   .text
+if_end                  LABEL     0468 1128   .text
+line#13                 LABEL     000A 10     .startup
+main                    LABEL     0426 1062   .text
+p                       LABEL     0422 1058   .data
+q                       LABEL     0424 1060   .data
+search                  LABEL     044C 1100   .text
+search_end              LABEL     046C 1132   .text
+stack_top               LABEL     0410 1040   .stack
+table1                  LABEL     0410 1040   .data
+table1_end              LABEL     041C 1052   .data
+TABLE1_SIZE             ABSOLUTE  0416 1046   .data
+table2                  LABEL     041C 1052   .data
+table2_end              LABEL     0422 1058   .data
 
 Code listing
+   1           		.syntax unified
+   2           		.thumb
+   3           	
+   4           		.section .startup, "ax"
+   5           	
+   6 0000 00 58		b	_start
+   7           	
+   8           	_start:
+   9 0002 4D 0C		ldr	sp, addressof_stack_top
+  10 0004 80 B7		mov	r0, pc
+  11 0006 0E A2		add	lr, r0, #4
+  12 0008 2F 0C		ldr	pc, addressof_main
+  13 000A FF 5B		b	.
+  14           	
+  15           	addressof_stack_top:
+  16 000C 10 04		.word	stack_top
+  17           	
+  18           	addressof_main:
+  19 000E 26 04		.word	main
+  20           	
+  21           		.section	.stack
+  22 0010 00   		.space	1024
+  22 .... ..
+  22 040F 00
+  23           	stack_top:
+  24           	
+  25           	/*-----------------------------------------------------------------------------
+  26           	*/
+  27           	
+  28           	/*	#define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
+  29           		uint16 table1[] = {10, 20, 5, 6, 34, 9};
+  30           		uint16 table2[] = {11, 22, 33};
+  31           		int16 p, q;
+  32           	
+  33           		int main() {
+  34           			p = search(table1, ARRAY_SIZE(table1), 20);
+  35           			q = search(table2, ARRAY_SIZE(table2), 31);
+  36           		}
+  37           	*/
+  38           	
+  39           		.data
+  40           	
+  41          		.equ	TABLE1_SIZE, (table1_end - table1) / 2
+  42           	table1:
+  43          		.word	10, 20, 5, 6, 34, 9
+  43 0410 0A 00 14 00 05 00 06 00 22 00 09 00
+  44           	table1_end:
+  45           	
+  46           	table2:
+  47          		.word	11, 22, 33
+  47 041C 0B 00 16 00 21 00
+  48           	table2_end:
+  49           	
+  50           	p:
+  51 0422 00 00		.word	0
+  52           	q:
+  53 0424 00 00		.word	0
+  54           	
+  55           	/*-----------------------------------------------------------------------------
+  56           		int main();
+  57           	*/
+  58           		.text
+  59           	main:
+  60 0426 0E 24		push	lr
+  61 0428 D0 0C		ldr	r0, addressof_table1
+  62 042A 61 60		mov	r1, #TABLE1_SIZE
+  63 042C 42 61		mov	r2, #20
+  64 042E 0E 5C		bl	search
+  65 0430 B1 0C		ldr	r1, addressof_p
+  66 0432 10 20		str	r0, [r1]
+  67           	
+  68 0434 80 0C		ldr	r0, addressof_table2
+  69 0436 31 60		mov	r1, #(table2_end - table2) / 2
+  70 0438 C2 62		mov	r2, #44
+  71 043A 08 5C		bl	search
+  72 043C 61 0C		ldr	r1, addressof_q
+  73 043E 10 20		str	r0, [r1]
+  74 0440 00 60		mov	r0, #0
+  75 0442 0F 04		pop	pc
+  76           	
+  77           	addressof_table1:
+  78 0444 10 04		.word	table1
+  79           	addressof_table2:
+  80 0446 1C 04		.word	table2
+  81           	addressof_p:
+  82 0448 22 04		.word	p
+  83           	addressof_q:
+  84 044A 24 04		.word	q
+  85           	
+  86           	/*-----------------------------------------------------------------------------
+  87           	
+  88           	(r0)int16 search(uint16 array[] (r0), uint8 array_size (r1), uint16 value (r2)) {
+  89           		for( uint8 i (r3)= 0; i < array_size && array[i] != value; ++i)
+  90           			;
+  91           		if( i < array_size)
+  92           			return i;
+  93           		return -1;
+  94           	}
+  95           	*/
+  96           		.text
+  97           	search:
+  98 044C 03 24		push	r3
+  99 044E 04 24		push	r4
+ 100 0450 03 60		mov	r3, #0		/* r3 - i	*/
+ 101           	for:
+ 102 0452 B0 B8		cmp	r3, r1		/* i - array_size	*/
+ 103 0454 05 4C		bhs	for_end
+ 104 0456 84 11		ldr	r4, [r0, r3]	/* array[i] != value	*/
+ 105 0458 40 B9		cmp	r4, r2
+ 106 045A 02 40		beq	for_end
+ 107 045C 33 A1		add	r3, r3, #2 	/* ++i	*/
+ 108 045E F9 5B		b	for
+ 109           	for_end:
+ 110 0460 B0 B8		cmp	r3, r1		/* if (i < array_size)	*/
+ 111 0462 02 4C		bhs	if_end
+ 112           	
+ 113 0464 B0 E8		lsr	r0, r3, #1	/* return i	*/
+ 114 0466 02 58		b	search_end
+ 115           	if_end:
+ 116 0468 00 60		mov	r0, #0		/* return -1	*/
+ 117 046A 80 A8		sub	r0, r0, #1
+ 118           	search_end:
+ 119 046C 04 04		pop	r4
+ 120 046E 03 04		pop	r3
+ 121 0470 0F B7		mov	pc, lr

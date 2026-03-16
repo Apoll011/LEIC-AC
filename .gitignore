@@ -1,3 +1,5 @@
 build/
 p16as
 *.o
+*.hex
+*.lst
