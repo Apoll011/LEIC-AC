@@ -20,14 +20,14 @@
 	mov	r2, #0
 
 check_M:
-	lsl r4, r0, #15
+	lsr r4, r0, #15
 	cmp r4, r2
 	beq check_m
 	mvn r0, r0
 	add r0, r0, #1
 
 check_m:
-	lsl r5, r1, #15
+	lsr r5, r1, #15
 	cmp r5, r2
 	beq end_checks
 	mvn r1, r1
