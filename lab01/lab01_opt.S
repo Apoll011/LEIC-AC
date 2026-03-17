@@ -16,7 +16,7 @@
 
 	mov	r2, #0
 
-	cmp r1, r0
+	cmp r0, r1
 	bhs end_check_multipliers
 	mov r3, r0
 	mov r0, r1
