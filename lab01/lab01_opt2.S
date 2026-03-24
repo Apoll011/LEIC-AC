@@ -14,6 +14,7 @@
 	;
 	; r3 e utilizado para guardar valores temporariamente
 
+multiply:
 	mov	r2, #0
 
 	cmp r0, r1
@@ -33,4 +34,5 @@ while:
 	sub	r1, r1, #1
 	b	while
 while_end:
-	b	.
+	mov r0, r2
+	mov pc, lr

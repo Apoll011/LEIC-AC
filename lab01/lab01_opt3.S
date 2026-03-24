@@ -17,6 +17,9 @@
 	;
 	; r3 e utilizado para guardar valores temporariamente
 
+multiply:
+	push r4
+	push r5
 	mov	r2, #0
 
 check_M:
@@ -56,6 +59,8 @@ while_end:
 	beq end
 	mvn r2, r2
 	add r2, r2, #1
-
 end:
-	b	.
+	mov r0, r2
+	pop r5
+	pop r4
+	mov pc, lr
