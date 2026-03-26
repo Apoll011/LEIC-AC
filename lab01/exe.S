@@ -105,6 +105,52 @@ end_if:
     pop r4
     pop pc
 
+build_sequence:
+    push lr
+    push r4
+    push r5
+    push r6
+    push r7
+
+    mov r7, #0
+
+    mov r4, #0 ; i = 0;
+
+    ldr r5, [r0, r4]
+
+build_while:
+    ldr r6, [r3, r4]
+    cmp r6, r7
+    beq end_build_while
+
+    push r0
+    push r1
+    push r2
+    
+    ldr r0, [r1, r4]
+    ldr r1, [r2, r4]
+    ldr r2, [r3, r4]
+    
+    add r4, r4, #1
+
+    b scale_value
+    str r0, [r1, r4]
+
+    pop r2
+    pop r1
+    pop r0
+
+    b build_while
+
+end_build_while:
+    mov r0, r4
+    add r0, r0, #1
+    pop r7
+    pop r6
+    pop r5
+    pop r4
+    pop pc
+
 main:
 
 .data
