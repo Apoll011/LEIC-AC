@@ -15,89 +15,96 @@ addressof_stack:
 addressof_main:
     .word   main
 
+
+; R0 = M...R1 = m
 multiply:
-    push r2
-    mov r2, #0
-    cmp     r0, r1
+    push r5             ; Save previous values of the temp registers
+    push r4
+    mov r5, #0          ; Add 0 into register 5
+
+    cmp     r0, r1      ; Compare r0 and r1, if r0 is smaller switch it with r1, to optimize the code
     bhs     end_check_multipliers
-    mov     r3, r0
+    mov     r3, r0      ; Switch Using r3 as temp value 
     mov     r0, r1
     mov     r1, r3
-end_check_multipliers:
-    mov     r3, r0
-    mov     r4, r2
-    mov     r0, r2
 
-    cmp     r1, r2
+end_check_multipliers:
+    mov     r3, r0      ; Move the M into r3 so r0 is used as lower part of the return
+
+    mov     r4, r5      ; Initialize lower and higher bits parts as zero
+    mov     r0, r5
+
+    cmp     r1, r5      ; If m is 0 end
     beq     while_end
 
 while:
-    add     r0, r0, r3
-    adc     r4, r4, r2
-    sub     r1, r1, #1
-    cmp     r1, r2
-    bzc     while
+    
+    add     r0, r0, r3  ; Add to r0 the value of r0 plus M
+    adc     r4, r4, r5  ; If overflows add the carry value untom r4 and r5 (witch is Zero)
+
+    sub     r1, r1, #1  ; Subtract 1 from m
+    cmp     r1, r5      ; If m is 0 end
+    bzc     while       ; Else continue
 
 while_end:
-    pop r2
-    mov     r1, r4
-    mov     pc, lr
+    pop r4              ; Retrive value from stack
+    pop r5
+
+    mov     r1, r4      ; Nove higher part of the 32 bit untom r1
+    mov     pc, lr      ; return
 
 
-
+; R0 = Value, R1=min, R2 = max
 clamp_value:
-    ;mov r0, #'val
-    ;mov r1, #min
-    ;mov r2, #max
-    cmp r0, r1
-    bhs check_max
+    cmp r0, r1          ; Compare the R0 and R1
+    bhs check_max       ; if R0 is smaller return r1
     mov r0, r1
     b end_clamp
-check_max:
-    cmp r2, r0
+check_max:              ; If R0 is greater than R1
+    cmp r2, r0          ; COmpare with r2
     bhs end_clamp
-    mov r0, r2
+    mov r0, r2          ; Return r2
 end_clamp:
-    mov pc, lr
+    mov pc, lr          ; Return  original r0 if not changed
 
 
 scale_value:
-    push lr
+    push lr             ; Save into Stack
     push r4
     push r5
     push r6
 
-    mov r5, #0xFF
+    mov r5, #0xFF       ; Temp values for calculations
     mov r4, #0
 
-    and r1, r1, r5  ; r1(k_ext) = r1(k) & 0xFF ;
-    bl multiply     ; r1-r0(prod) = umull ( r0(v), r1 ) ;
+    and r1, r1, r5      ; r1(k_ext) = r1(k) & 0xFF ;
+    bl multiply         ; r1-r0(prod) = umull ( r0(v), r1 ) ;
 
-    cmp r2, r4      ; s(r2) - 0
-    beq end_if      ; Z != 0
-    and r2, r2, r5  ; r2 = r2 & 0xFF ;  
+    cmp r2, r4          ; s(r2) - 0
+    beq end_if          ; Z != 0
+    and r2, r2, r5      ; r2 = r2 & 0xFF ;  
                     
-    mov r4, r2      ; temp s
-    mov r6, #1      ; Shifted 1
-shiting_left:       ; Shift temp s times the 1
+    mov r4, r2          ; temp s
+    mov r6, #1          ; Shifted 1
+shifting_left:          ; Shift temp s times the 1
     sub r4, r4, #1
     beq end_shifting_left
     lsl r6, r6, #1
-    b shiting_left 
+    b shifting_left 
 end_shifting_left:
-    add r0, r0, r6  ; Adds the r6 shifted value untom r0, and the carry unto r1
-    adc r1, r1, r4  ; add 0 from r4 and the carry
+    add r0, r0, r6      ; Adds the r6 shifted value untom r0, and the carry unto r1
+    adc r1, r1, r4      ; add the 0 from r4 and the carry
 shifting_right:
-    sub r2, r2, #1  ; Shifts r1-r0 s times
+    sub r2, r2, #1      ; Shifts r1-r0 s times
     beq end_if
     lsr r1, r1, #1
     rrx r0, r0
     b shifting_right
 end_if:
-    and r0, r0, r5  ; r0(prod_s) = r0 & 0xFF;
+    and r0, r0, r5      ; r0(prod_s) = r0 & 0xFF;
     mov r1, #VAL_MIN
     mov r2, r0
-    b clamp_value   ; r0(prod_c) = clamp_value ( r0 , #VAL_MIN , r2 ) ;   
+    bl clamp_value       ; r0(prod_c) = clamp_value ( r0 , #VAL_MIN , r2 ) ;   
 
     ; return r0 ;  
     pop r6
@@ -133,7 +140,7 @@ build_while:
     
     add r4, r4, #1
 
-    b scale_value
+    bl scale_value
     str r0, [r1, r4]
 
     pop r2
