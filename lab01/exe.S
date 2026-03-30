@@ -102,6 +102,7 @@ shifting_right:
     b shifting_right
 end_if:
     and r0, r0, r5      ; r0(prod_s) = r0 & 0xFF;
+    and r1, r1, r5      ; r0(prod_s) = r0 & 0xFF;
     mov r1, #VAL_MIN
     mov r2, r0
     bl clamp_value       ; r0(prod_c) = clamp_value ( r0 , #VAL_MIN , r2 ) ;   
@@ -159,6 +160,27 @@ end_build_while:
     pop pc
 
 main:
+
+    mov r0, #0x64 ; v_init = 100
+    ldr r1, array_vals1 ; v[] = array_vals1
+    ldr r2, array_k1 ; k[] = array_k1
+    ldr r3, array_s1 ; s[] = array_s1
+    bl build_sequence
+    mov r7, r0
+
+    mov r0, #0x0A ; v_init = 10
+    ldr r1, array_vals2 ; v[] = array_vals2
+    ldr r2, array_k2 ; k[] = array_k2
+    ldr r3, array_s2 ; s[] = array_s2
+    bl build_sequence
+    mov r8, r1
+
+    mov r0, #0x32 ; v_init = 50
+    ldr r1, array_vals3 ; v[] = array_vals3
+    ldr r2, array_k3 ; k[] = array_k3
+    ldr r3, array_s3 ; s[] = array_s3
+    bl build_sequence
+    mov r9, r2
 
 .data
     array_k1:
