@@ -15,6 +15,29 @@ addressof_stack:
 addressof_main:
     .word   main
 
+main:
+
+    mov r0, #0x64 ; v_init = 100
+    ldr r1, array_vals1_addr ; v[] = array_vals1
+    ldr r2, array_k1_addr ; k[] = array_k1
+    ldr r3, array_s1_addr ; s[] = array_s1
+    bl build_sequence
+    mov r7, r0
+
+    mov r0, #0x0A ; v_init = 10
+    ldr r1, array_vals2_addr ; v[] = array_vals2
+    ldr r2, array_k2_addr ; k[] = array_k2
+    ldr r3, array_s2_addr ; s[] = array_s2
+    bl build_sequence
+    mov r8, r0
+
+    mov r0, #0x32 ; v_init = 50
+    ldr r1, array_vals3_addr ; v[] = array_vals3
+    ldr r2, array_k3_addr ; k[] = array_k3
+    ldr r3, array_s3_addr ; s[] = array_s3
+    bl build_sequence
+    mov r9, r0
+    b .
 
 ; R0 = M...R1 = m
 multiply:
@@ -66,6 +89,28 @@ check_max:              ; If R0 is greater than R1
     mov r0, r2          ; Return r2
 end_clamp:
     mov pc, lr          ; Return  original r0 if not changed
+
+
+array_k1_addr:
+    .word array_k1
+array_s1_addr:
+    .word array_s1
+array_vals1_addr:
+    .word array_vals1
+array_k2_addr:
+    .word array_k2
+array_s2_addr:
+    .word array_s2
+array_vals2_addr:
+    .word array_vals2
+array_k3_addr:
+    .word array_k3
+array_s3_addr:
+    .word array_s3
+array_vals3_addr:
+    .word array_vals3
+build_sequence_addr:
+    .word build_sequence
 
 
 scale_value:
@@ -124,25 +169,25 @@ build_sequence:
 
     mov r4, #0 ; i = 0;
 
-    ldr r5, [r0, r4]
+    str r0, [r1, #0] ; v[0] = v_init
 
 build_while:
-    ldr r6, [r3, r4]
-    cmp r6, r7
+    ldr r6, [r3, r4]    ; s[i]
+    cmp r6, r7          ; if s[i] == 0 end
     beq end_build_while
 
     push r0
     push r1
     push r2
     
-    ldr r0, [r1, r4]
-    ldr r1, [r2, r4]
-    ldr r2, [r3, r4]
+    ldr r0, [r1, r4] ; v[i]
+    ldr r1, [r2, r4] ; k[i]
+    ldr r2, [r3, r4] ; s[i]
     
-    add r4, r4, #1
+    add r4, r4, #1 ; i++
 
-    bl scale_value
-    str r0, [r1, r4]
+    bl scale_value      ; scale_value ( v[i] , k[i] , s[i] ) ;
+    str r0, [r1, r4]    ; v[i] = scale_value ( v[i] , k[i] , s[i] ) ;   
 
     pop r2
     pop r1
@@ -151,36 +196,13 @@ build_while:
     b build_while
 
 end_build_while:
-    mov r0, r4
-    add r0, r0, #1
+    mov r0, r4      ; move i into r0 to return the number of elements in the sequence
+    add r0, r0, #1  ; add 1 to i to return the number of elements in the sequence
     pop r7
     pop r6
     pop r5
     pop r4
     pop pc
-
-main:
-
-    mov r0, #0x64 ; v_init = 100
-    ldr r1, array_vals1 ; v[] = array_vals1
-    ldr r2, array_k1 ; k[] = array_k1
-    ldr r3, array_s1 ; s[] = array_s1
-    bl build_sequence
-    mov r7, r0
-
-    mov r0, #0x0A ; v_init = 10
-    ldr r1, array_vals2 ; v[] = array_vals2
-    ldr r2, array_k2 ; k[] = array_k2
-    ldr r3, array_s2 ; s[] = array_s2
-    bl build_sequence
-    mov r8, r1
-
-    mov r0, #0x32 ; v_init = 50
-    ldr r1, array_vals3 ; v[] = array_vals3
-    ldr r2, array_k3 ; k[] = array_k3
-    ldr r3, array_s3 ; s[] = array_s3
-    bl build_sequence
-    mov r9, r2
 
 .data
     array_k1:
