@@ -17,13 +17,6 @@ addressof_main:
 
 main:
 
-    push lr             ; Save into Stack
-    push r4
-    push r5
-    push r6
-    push r7
-    push r8
-    push r9
 
     mov r0, #0x64 ; v_init = 100
     ldr r1, array_vals1_addr ; v[] = array_vals1
@@ -66,24 +59,22 @@ end_check_multipliers:
     mov     r4, r5      ; Initialize lower and higher bits parts as zero
     mov     r0, r5
 
+while:
     cmp     r1, r5      ; If m is 0 end
     beq     while_end
 
-while:
-    
     add     r0, r0, r3  ; Add to r0 the value of r0 plus M
     adc     r4, r4, r5  ; If overflows add the carry value untom r4 and r5 (witch is Zero)
 
     sub     r1, r1, #1  ; Subtract 1 from m
-    cmp     r1, r5      ; If m is 0 end
-    bzc     while       ; Else continue
+    b       while
 
 while_end:
     pop r5              ; Retrive value from stack
     pop r4
 
     mov     r1, r4      ; Nove higher part of the 32 bit untom r1
-    mov     pc, lr      ; return
+    pop     pc          ; return
 
 
 ; R0 = Value, R1=min, R2 = max
@@ -149,11 +140,11 @@ end_shifting_left:
     add r0, r0, r6      ; Adds the r6 shifted value untom r0, and the carry unto r1
     adc r1, r1, r4      ; add the 0 from r4 and the carry
 shifting_right:
-    sub r2, r2, #1      ; Shifts r1-r0 s times
-    beq end_if
-    lsr r1, r1, #1
-    rrx r0, r0
-    b shifting_right
+    sub   r2, r2, #1      ; s = s - 1
+    blt   end_if          ; if s < 0 end
+    lsr   r1, r1, #1      ; Shift R1. Sending the bit to the carry.
+    rrx   r0, r0          ; Shift R0. If the carry is set, the most significant bit of R0 will be set to 1, otherwise it will be set to 0.
+    b     shifting_right
 end_if:
     and r0, r0, r5      ; r0(prod_s) = r0 & 0xFF;
     and r1, r1, r5      ; r0(prod_s) = r0 & 0xFF;
@@ -166,6 +157,7 @@ end_if:
     pop r5          
     pop r4
     pop pc
+
 
 build_sequence:
     push lr
@@ -181,28 +173,40 @@ build_sequence:
     str r0, [r1, #0] ; v[0] = v_init
 
 build_while:
-    ldr r6, [r3, r4]    ; s[i]
-    cmp r6, r7          ; if s[i] == 0 end
-    beq end_build_while
+    ldrb  r6, [r3, r4]    ; s[i]
+    cmp   r6, r7          ; s[i] == 0?
+    beq   end_build_while
 
-    push r0
-    push r1
-    push r2
-    
-    ldr r0, [r1, r4] ; v[i]
-    ldr r1, [r2, r4] ; k[i]
-    ldr r2, [r3, r4] ; s[i]
-    
-    add r4, r4, #1 ; i++
+    ; Calcular offset para v[i] (i * 2)
+    mov   r5, r4
+    lsl   r5, r5, #1      ; r5 = i * 2
 
-    bl scale_value      ; scale_value ( v[i] , k[i] , s[i] ) ;
-    str r0, [r1, r4]    ; v[i] = scale_value ( v[i] , k[i] , s[i] ) ;   
+    ; save addresses and index on stack for the function call
+    push  r1              ; array_v address
+    push  r2              ; array_k address
+    push  r3              ; array_s address
+    push  r4              ; i
+    push  r5              ; Offset (i*2)
 
-    pop r2
-    pop r1
-    pop r0
+    ; load values for the function call
+    ldr   r0, [r1, r5]    ; r0 = v[i] (16 bits)
+    ldrb  r1, [r2, r4]    ; r1 = k[i] (8 bits)
+    mov   r2, r6          ; r2 = s[i]
 
-    b build_while
+    bl    scale_value     ; r0 = scale_value ( v[i], k[i], s[i] )
+
+    ; restore values from stack
+    pop   r5              ; Offset (i*2)
+    pop   r4              ; i antigo
+    pop   r3              ; addr s
+    pop   r2              ; addr k
+    pop   r1              ; addr v
+
+    add   r5, r5, #2      ; Novo offset = (i+1) * 2
+    str   r0, [r1, r5]    ; v[i+1] = resultado
+
+    add   r4, r4, #1      ; i = i + 1
+    b     build_while
 
 end_build_while:
     mov r0, r4      ; move i into r0 to return the number of elements in the sequence
@@ -214,35 +218,23 @@ end_build_while:
     pop pc
 
 .data
-    array_k1:
-        .byte  205, 154, 102, 51, 0
-        .align
-    array_s1:  
-        .byte  8, 8, 8, 8, 0
-        .align
-    array_vals1:
-        .space 6
-        .align
+    array_k1:    .byte  205, 154, 102, 51, 0
+                 .align 1
+    array_s1:    .byte  8, 8, 8, 8, 0
+                 .align 1
+    array_vals1: .space 12    ; 6 elementos * 2 bytes = 12
 
-    array_k2:
-        .byte   35, 38, 42, 45, 0
-        .align 
-    array_s2:  
-        .byte  5, 5, 5, 5, 0
-        .align
-    array_vals2:
-        .space 6
-        .align
+    array_k2:    .byte  35, 38, 42, 45, 0
+                 .align 1
+    array_s2:    .byte  5, 5, 5, 5, 0
+                 .align 1
+    array_vals2: .space 12
 
-    array_k3:
-        .byte   205, 154, 0, 45, 35, 0
-        .align 
-    array_s3:  
-        .byte   8, 8, 0, 5, 5, 0
-        .align
-    array_vals3:
-        .space 7
-        .align
+    array_k3:    .byte  205, 154, 0, 45, 35, 0
+                 .align 1
+    array_s3:    .byte  8, 8, 0, 5, 5, 0
+                 .align 1
+    array_vals3: .space 14    ; 7 elementos * 2 bytes = 14
 
 .stack
 .space STACK_SIZE
