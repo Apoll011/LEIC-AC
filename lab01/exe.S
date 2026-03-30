@@ -17,6 +17,14 @@ addressof_main:
 
 main:
 
+    push lr             ; Save into Stack
+    push r4
+    push r5
+    push r6
+    push r7
+    push r8
+    push r9
+
     mov r0, #0x64 ; v_init = 100
     ldr r1, array_vals1_addr ; v[] = array_vals1
     ldr r2, array_k1_addr ; k[] = array_k1
@@ -41,8 +49,9 @@ main:
 
 ; R0 = M...R1 = m
 multiply:
-    push r5             ; Save previous values of the temp registers
-    push r4
+    push lr             ; Save into Stack
+    push r4             ; Save previous values of the temp registers
+    push r5
     mov r5, #0          ; Add 0 into register 5
 
     cmp     r0, r1      ; Compare r0 and r1, if r0 is smaller switch it with r1, to optimize the code
@@ -70,8 +79,8 @@ while:
     bzc     while       ; Else continue
 
 while_end:
-    pop r4              ; Retrive value from stack
-    pop r5
+    pop r5              ; Retrive value from stack
+    pop r4
 
     mov     r1, r4      ; Nove higher part of the 32 bit untom r1
     mov     pc, lr      ; return
