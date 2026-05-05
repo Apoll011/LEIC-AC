@@ -29,15 +29,22 @@ main:
 	bl	outport_write
 	mov	r0, #ALL_ZEROS & 0xFF
 	bl	outport_write
+	mov r4, #0x07
 loop:
 	;bl	inport_read
+	bl inport_read
+	and r0, r0, r4
+	add r0, r0, #1
+	lsl r1, r0, #3
+	lsl r2, r1, #1
+	add r2, r2, r1
 	mov r0, #0x81
 	bl	outport_write
-	mov r0, #0x0A
+	mov r0, r2
 	bl sleep
 	mov r0, #0x80
 	bl	outport_write
-	mov r0, #0x0A
+	mov r0, r2
 	bl sleep
 	b	loop
 
@@ -77,3 +84,13 @@ sleep_end:
 	.stack
 	.space	STACK_SIZE
 stack_top:
+
+; r0++, r0<<3 + r0<<1
+; 000 - 0x0A  0 - 10
+; 001 - 0x14  1 - 20
+; 010 - 0x1E  2 - 30
+; 011 - 0x28  40
+; 100 - 0x32  50
+; 101 - 0x3C  60
+; 110 - 0x46  70
+; 111 - 0x50  80
