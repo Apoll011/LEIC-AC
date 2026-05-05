@@ -36,7 +36,7 @@ loop:
 	and r0, r0, r4
 	add r0, r0, #1
 	lsl r1, r0, #3
-	lsl r2, r1, #1
+	lsl r2, r0, #1
 	add r2, r2, r1
 	mov r0, #0x81
 	bl	outport_write
