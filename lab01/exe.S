@@ -177,7 +177,7 @@ build_while:
     cmp   r6, r7          ; s[i] == 0?
     beq   end_build_while
 
-    ; Calcular offset para v[i] (i * 2)
+    ; offset v[i] (i * 2)
     mov   r5, r4
     lsl   r5, r5, #1      ; r5 = i * 2
 
@@ -185,9 +185,7 @@ build_while:
     push  r1              ; array_v address
     push  r2              ; array_k address
     push  r3              ; array_s address
-    push  r4              ; i
-    push  r5              ; Offset (i*2)
-
+    
     ; load values for the function call
     ldr   r0, [r1, r5]    ; r0 = v[i] (16 bits)
     ldrb  r1, [r2, r4]    ; r1 = k[i] (8 bits)
@@ -196,13 +194,11 @@ build_while:
     bl    scale_value     ; r0 = scale_value ( v[i], k[i], s[i] )
 
     ; restore values from stack
-    pop   r5              ; Offset (i*2)
-    pop   r4              ; i antigo
     pop   r3              ; addr s
     pop   r2              ; addr k
     pop   r1              ; addr v
 
-    add   r5, r5, #2      ; Novo offset = (i+1) * 2
+    add   r5, r5, #2      ; offset = (i+1) * 2
     str   r0, [r1, r5]    ; v[i+1] = resultado
 
     add   r4, r4, #1      ; i = i + 1
@@ -222,7 +218,7 @@ end_build_while:
                  .align 1
     array_s1:    .byte  8, 8, 8, 8, 0
                  .align 1
-    array_vals1: .space 12    ; 6 elementos * 2 bytes = 12
+    array_vals1: .space 12   
 
     array_k2:    .byte  35, 38, 42, 45, 0
                  .align 1
@@ -234,7 +230,7 @@ end_build_while:
                  .align 1
     array_s3:    .byte  8, 8, 0, 5, 5, 0
                  .align 1
-    array_vals3: .space 14    ; 7 elementos * 2 bytes = 14
+    array_vals3: .space 14    
 
 .stack
 .space STACK_SIZE
