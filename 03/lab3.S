@@ -34,7 +34,7 @@ main:
 loop:
 	bl inport_read
 	and r1, r0, r5
-	lsr r1, r1, #8
+	cmp r0, r5
 	bne end_loop
 	and r0, r0, r4
 	add r0, r0, #1
