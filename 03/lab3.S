@@ -30,19 +30,24 @@ main:
 	mov	r0, #ALL_ZEROS & 0xFF
 	bl	outport_write
 	mov r4, #0x07
+	mov r5, #0x80 
 loop:
-	;bl	inport_read
 	bl inport_read
+	and r1, r0, r5
+	lsr r1, r1, #8
+	bne end_loop
 	and r0, r0, r4
 	add r0, r0, #1
 	lsl r1, r0, #3
 	lsl r2, r0, #1
 	add r2, r2, r1
 	lsr r2, r2, #1
+	
 	mov r0, #0x81
 	bl	outport_write
 	mov r0, r2
 	bl sleep
+end_loop:
 	mov r0, #0x80
 	bl	outport_write
 	mov r0, r2
