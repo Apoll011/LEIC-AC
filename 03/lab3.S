@@ -35,6 +35,8 @@ loop:
 	bl	outport_write
 	mov r0, #0x0A
 	bl sleep
+	mov r0, #0x01
+	bl	outport_write
 	b	loop
 
 ; Rotina:    inport_read
