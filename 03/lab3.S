@@ -1,7 +1,7 @@
 ; Ficheiro:  lab03.s
 ; Descricao: Programa para a realizacao da 3a atividade laboratorial de
 ;            Arquitetura de Computadores.
-; Autor:	 Tiago Inês & Abdelhak Ould Chikr 
+; Autor:	
 ; Data:      05-04-2026
 
 ; Definicao dos valores dos simbolos utilizados no programa

@@ -9,7 +9,7 @@
 	.equ	STACK_SIZE, 64                ; Dimensao do stack, em bytes
 
 ; *** Inicio de troco para completar ***
-	.equ	ENABLE_EXTINT, 0x??           ; ??
+	.equ	ENABLE_EXTINT, 0x10          ; ??
 ; *** Fim de troco para completar ***
 
 	.equ	OUTPORT_ADDRESS, 0xFFC0       ; Endereco do porto de saida
