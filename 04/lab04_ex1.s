@@ -8,9 +8,7 @@
 ;
 	.equ	STACK_SIZE, 64                ; Dimensao do stack, em bytes
 
-; *** Inicio de troco para completar ***
-	.equ	ENABLE_EXTINT, 0x10          ; ??
-; *** Fim de troco para completar ***
+	.equ	ENABLE_EXTINT, 0x10           ; 0x10
 
 	.equ	OUTPORT_ADDRESS, 0xFFC0       ; Endereco do porto de saida
 
@@ -46,14 +44,14 @@ var_addr_startup:
 ; Saidas:    *** Para completar ***
 ; Efeitos:   *** Para completar ***
 main:
-	mov	r0, #VAR_INIT_VAL
-	ldr	r1, var_addr_main
-	strb	r0, [r1, #0]
-	bl	outport_write
-	mrs	r0, cpsr
-	mov	r1, #ENABLE_EXTINT
-	orr	r0, r0, r1
-	msr	cpsr, r0
+		mov	r0, #VAR_INIT_VAL
+		ldr	r1, var_addr_main
+		strb	r0, [r1, #0]
+		bl	outport_write
+		mrs	r0, cpsr
+		mov	r1, #ENABLE_EXTINT
+		orr	r0, r0, r1
+		msr	cpsr, r0
 main_loop:
 	ldr	r0, var_addr_main
 	ldrb	r0, [r0, #0]
