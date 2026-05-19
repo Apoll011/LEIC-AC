@@ -46,7 +46,22 @@ main:
     bl clear
     
     mov r4, #0x0F
-    mov r6, #0b01100000
+	mov r6, #0x03
+    ;mov r6, #0b01100000
+
+	mov r5, #0
+p1:
+	bl	inport_read
+	and r0, r0, r0
+	bne pressed
+	b p1
+pressed:
+	add r5, r5, #1
+	and r1, r5, r3
+	and r0, r0, r4
+	bl led
+	b p1
+
 loop:
     bl	inport_read
     mov r5, r0
