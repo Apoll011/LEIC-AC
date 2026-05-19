@@ -52,6 +52,7 @@ main:
 	mov r5, #0
 p1:
 	bl	inport_read
+    mvn r0, r0
 	and r0, r0, r0
 	bne pressed
 	b p1
