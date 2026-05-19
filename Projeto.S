@@ -53,14 +53,15 @@ main:
 p1:
 	bl	inport_read
     mvn r0, r0
-	and r0, r0, r0
+	and r0, r0, r4
 	bne pressed
 	b p1
 pressed:
 	add r5, r5, #1
-	and r1, r5, r3
-	and r0, r0, r4
+	and r1, r5, r6
 	bl led
+    mov r0, #8
+    bl sleep
 	b p1
 
 loop:
