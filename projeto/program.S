@@ -33,6 +33,8 @@ stack_top_addr:
 	.word	stack_top
 
 main:
+	bl init_random
+
 	mov r0, #ALL_LEDS
     bl clear
     
@@ -178,6 +180,29 @@ check_buttons:
 addr_prev_buttons:
     .word prev_buttons
 
+init_random:
+	ldr r0, addr_random_state
+    str r0, [r0]
+
+get_random:
+	ldr r2, addr_random_state
+    ldr r0, [r2]
+
+	lsl r1, r0, #7
+	eor r0, r0, r1      
+
+	lsr r1, r0, #5
+	eor r0, r0, r1   
+	
+	lsl r1, r0, #3
+	eor r0, r0, r1   
+	
+	str r0, [r2]
+	mov pc, lr
+
+addr_random_state:
+	.word random_state
+
 outport_write:
 	mov	r1, #OUTPORT_ADDRESS & 0xFF
 	movt	r1, #(OUTPORT_ADDRESS >> 8) & 0xFF
@@ -206,9 +231,11 @@ sleep:
 
 	.data
 led_state:
-	.word	0		; estado persistente dos 4 ALL_LEDs (byte baixo)
+	.word	0		; estado persistente dos 4 LEDs
 prev_buttons:
     .word 0x0F      ; todos os botões começam soltos (bit=1 = solto)
+random_state:
+	.word 	0
 
 	.stack
 	.space	STACK_SIZE
