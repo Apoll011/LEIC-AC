@@ -182,6 +182,43 @@ led_skip3:
 led_state_addr:
 	.word	led_state
 
+; check_buttons - Deteta cliques (flanco de descida) nos 4 botões
+;   Não recebe argumentos
+;   Retorna em r0: máscara de botões clicados neste ciclo
+;       bit0=1 → botão 1 clicado
+;       bit1=1 → botão 2 clicado
+;       bit2=1 → botão 3 clicado
+;       bit3=1 → botão 4 clicado
+;       r0=0   → nenhum botão clicado
+check_buttons:
+    push lr
+
+    bl  inport_read             ; r0 = valor atual da entrada
+
+    ; Isolar apenas os 4 bits dos botões (bits 3:0)
+    mov r1, #0x0F
+    and r0, r0, r1              ; r0 = estado atual dos 4 botões
+
+    ; Carregar estado anterior
+    ldr r2, addr_prev_buttons
+    ldr r3, [r2]                ; r3 = estado anterior
+
+    ; Guardar estado atual como novo "anterior"
+    str r0, [r2]
+
+    ; cliques = prev AND NOT(atual)  →  flancos de descida
+    mvn r1, r0
+    and r0, r3, r1
+
+    ; Mascarar para garantir apenas bits 3:0
+    mov r1, #0x0F
+    and r0, r0, r1              ; r0 = máscara de cliques
+
+    pop pc
+
+addr_prev_buttons:
+    .word prev_buttons
+
 outport_write:
 	mov	r1, #OUTPORT_ADDRESS & 0xFF
 	movt	r1, #(OUTPORT_ADDRESS >> 8) & 0xFF
@@ -205,6 +242,8 @@ sleep_end:
 	.data
 led_state:
 	.word	0		; estado persistente dos 4 LEDs (byte baixo)
+prev_buttons:
+    .word 0x0F      ; todos os botões começam soltos (bit=1 = solto)
 
 	.stack
 	.space	STACK_SIZE
