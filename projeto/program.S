@@ -20,6 +20,7 @@
     .equ    LED_RED, 0x01
     .equ    LED_GREEN, 0x02
     .equ    LED_YELLOW, 0x03
+	.equ 	ALL_LEDS, LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK
 
 	.text
 	b	program
@@ -32,75 +33,34 @@ stack_top_addr:
 	.word	stack_top
 
 main:
-	mov r0, #(LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK)
+	mov r0, #ALL_LEDS
     bl clear
     
-    mov r0, #(LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK)
+    mov r0, #ALL_LEDS
     mov r1, #LED_RED
     bl led
     
-    mov r0, #14
+    mov r0, #5
     bl sleep
     
-    mov r0, #(LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK)
+    mov r0, #ALL_LEDS
     bl clear
-    
-    mov r4, #0x0F
-	mov r6, #0x03
-    ;mov r6, #0b01100000
 
-	mov r5, #0
-p1:
-	bl	inport_read
-    mvn r0, r0
-	and r0, r0, r4
-	bne pressed
-	b p1
-pressed:
-	add r5, r5, #1
-	and r1, r5, r6
-	bl led
-    mov r0, #8
-    bl sleep
-	b p1
-
-loop:
-    bl	inport_read
-    mov r5, r0
-    lsr r2, r0, #7
-    and r0, r0, r4
-    mvn r0, r0
-    and r2, r2, r2
-    bne clear_r
+	mov r0, #ALL_LEDS
     mov r1, #LED_YELLOW
-
-    and r1, r5, r6
-    lsr r1, r1, #5
     bl led
-    b	loop
-clear_r:
+    
+wait_for_start:
+	bl check_buttons
+	and r0, r0, r0
+	beq wait_for_start
+	mov r0, #ALL_LEDS
     bl clear
-    b loop
+
+start_game:
 
 
-
-test1:
-    mov r0, #(LED0_MASK | LED1_MASK)
-	mov r1, #LED_RED
-    bl led
-    mov r0, #LED0_MASK
-    bl clear
-    mov r0, #(LED0_MASK | LED2_MASK)
-    mov r1, #LED_GREEN
-    bl led
-
-inport_read:
-	mov	r1, #INPORT_ADDRESS & 0xFF
-	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
-	ldrb	r0, [r1, #0]
-	mov	pc, lr
-
-; r0 - máscara de LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
+; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 clear:
     push lr
     mov r1, #LED_BLACK
@@ -109,8 +69,8 @@ clear:
     mov pc, lr
 
 
-; led - Acende/apaga LEDs com persistência de estado
-;   r0 - máscara de LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
+; led - Acende/apaga ALL_LEDs com persistência de estado
+;   r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 ;   r1 - cor: 00=apagar, 01/10/11=cores 1/2/3
 led:
 	push	lr
@@ -132,58 +92,57 @@ led:
 	mov	r0, #0x03
 	and	r0, r5, r0		; cor & 0x03 → posição 0
 	orr	r3, r3, r0
-led_skip0:
 
-	; --- LED1 ---
-	mov	r0, #0x02
-	and	r0, r4, r0		; bit 1 da máscara
-	beq	led_skip1
-	mov	r0, #0xF3		; 1111 0011 — limpa bits 3:2
-	and	r3, r3, r0
-	lsl	r0, r5, #2		; cor << 2 → posição 2
-	mov	r1, #0x0C		; bits 3:2
-	and	r0, r0, r1
-	orr	r3, r3, r0
-led_skip1:
+	led_skip0:
+		; --- LED1 ---
+		mov	r0, #0x02
+		and	r0, r4, r0		; bit 1 da máscara
+		beq	led_skip1
+		mov	r0, #0xF3		; 1111 0011 — limpa bits 3:2
+		and	r3, r3, r0
+		lsl	r0, r5, #2		; cor << 2 → posição 2
+		mov	r1, #0x0C		; bits 3:2
+		and	r0, r0, r1
+		orr	r3, r3, r0
+	led_skip1:
 
-	; --- LED2 ---
-	mov	r0, #0x04
-	and	r0, r4, r0		; bit 2 da máscara
-	beq	led_skip2
-	mov	r0, #0xCF		; 1100 1111 — limpa bits 5:4
-	and	r3, r3, r0
-	lsl	r0, r5, #4		; cor << 4 → posição 4
-	mov	r1, #0x30		; bits 5:4
-	and	r0, r0, r1
-	orr	r3, r3, r0
-led_skip2:
+		; --- LED2 ---
+		mov	r0, #0x04
+		and	r0, r4, r0		; bit 2 da máscara
+		beq	led_skip2
+		mov	r0, #0xCF		; 1100 1111 — limpa bits 5:4
+		and	r3, r3, r0
+		lsl	r0, r5, #4		; cor << 4 → posição 4
+		mov	r1, #0x30		; bits 5:4
+		and	r0, r0, r1
+		orr	r3, r3, r0
+	led_skip2:
 
-	; --- LED3 ---
-	mov	r0, #0x08
-	and	r0, r4, r0		; bit 3 da máscara
-	beq	led_skip3
-	mov	r0, #0x3F		; 0011 1111 — limpa bits 7:6
-	and	r3, r3, r0
-	lsl	r0, r5, #6		; cor << 6 → posição 6
-	mov	r1, #0xC0		; máscara bits 7:6
-	and	r0, r0, r1
-	orr	r3, r3, r0
-led_skip3:
+		; --- LED3 ---
+		mov	r0, #0x08
+		and	r0, r4, r0		; bit 3 da máscara
+		beq	led_skip3
+		mov	r0, #0x3F		; 0011 1111 — limpa bits 7:6
+		and	r3, r3, r0
+		lsl	r0, r5, #6		; cor << 6 → posição 6
+		mov	r1, #0xC0		; máscara bits 7:6
+		and	r0, r0, r1
+		orr	r3, r3, r0
+	led_skip3:
 
-	strb	r3, [r2]	; guardar novo estado em led_state
-	mov	r0, r3
-	bl	outport_write	; aplicar ao porto de saída
-    
-	pop	r5
-	pop	r4
-	pop	lr
-	mov	pc, lr
+		strb	r3, [r2]	; guardar novo estado em led_state
+		mov	r0, r3
+		bl	outport_write	; aplicar ao porto de saída
+		
+		pop	r5
+		pop	r4
+		pop	lr
+		mov	pc, lr
 
 led_state_addr:
 	.word	led_state
 
 ; check_buttons - Deteta cliques (flanco de descida) nos 4 botões
-;   Não recebe argumentos
 ;   Retorna em r0: máscara de botões clicados neste ciclo
 ;       bit0=1 → botão 1 clicado
 ;       bit1=1 → botão 2 clicado
@@ -225,23 +184,29 @@ outport_write:
 	strb	r0, [r1, #0]
 	mov	pc, lr
 
+inport_read:
+	mov	r1, #INPORT_ADDRESS & 0xFF
+	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
+	ldrb	r0, [r1, #0]
+	mov	pc, lr
+
 sleep:
 	and	r0, r0, r0
 	beq	sleep_end
-sleep_outer_loop:
-	mov	r1, #0x3E
-	movt	r1, #0x03
-sleep_inner_loop:
-	sub	r1, r1, #1
-	bne	sleep_inner_loop
-	sub	r0, r0, #1
-	bne	sleep_outer_loop
-sleep_end:
-	mov	pc, lr
+	sleep_outer_loop:
+		mov	r1, #0x3E
+		movt	r1, #0x03
+	sleep_inner_loop:
+		sub	r1, r1, #1
+		bne	sleep_inner_loop
+		sub	r0, r0, #1
+		bne	sleep_outer_loop
+	sleep_end:
+		mov	pc, lr
 
 	.data
 led_state:
-	.word	0		; estado persistente dos 4 LEDs (byte baixo)
+	.word	0		; estado persistente dos 4 ALL_LEDs (byte baixo)
 prev_buttons:
     .word 0x0F      ; todos os botões começam soltos (bit=1 = solto)
 
