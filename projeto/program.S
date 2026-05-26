@@ -59,14 +59,14 @@ wait_for_startup:
 	mov r0, #ALL_LEDS
     bl clear
 
-	mov r1, #0x01
+	mov r4, #0x01
 wait_game_start:
 	bl check_buttons
-	cmp r0, r1
-	beq wait_game_start
+	cmp r0, r4
+	bne wait_game_start
 
 game_starts:
-	
+	b game_starts	
 
 ; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 clear:
