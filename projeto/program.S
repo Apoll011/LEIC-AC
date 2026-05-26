@@ -68,6 +68,77 @@ wait_game_start:
 game_starts:
 	b game_starts	
 
+
+
+game_won:
+	mov r0, #ALL_LEDS
+	mov r1, #LED_GREEN
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+
+	mov r0, #ALL_LEDS
+	mov r1, #LED_GREEN
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+
+	mov r0, #ALL_LEDS
+	mov r1, #LED_GREEN
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+	
+	b reset
+
+game_lost:
+	mov r0, #ALL_LEDS
+	mov r1, #LED_RED
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+
+	mov r0, #ALL_LEDS
+	mov r1, #LED_RED
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+
+	mov r0, #ALL_LEDS
+	mov r1, #LED_RED
+	bl led
+	mov r0, #0x05
+	bl sleep
+	mov r0, #ALL_LEDS
+	bl clear
+	mov r0, #0x05
+	bl sleep
+
+	b reset
+
+reset:
+	b main
+
 ; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 clear:
     push lr
