@@ -30,7 +30,7 @@
 
 	.text
 	b	program
-	b	.		; Reservado para a ISR
+	b	ptc_isr
 program:
 	ldr	sp, stack_top_addr
 	b	main
@@ -39,6 +39,14 @@ stack_top_addr:
 	.word	stack_top
 
 main:
+	bl ptc_init
+	
+	mrs     r0, cpsr
+    mov     r1, #0x0010
+    mvn     r1, r1
+    and     r0, r0, r1
+    msr     cpsr, r0
+
 	bl init_random
 
 	mov r0, #ALL_LEDS
