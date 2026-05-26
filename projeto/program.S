@@ -52,15 +52,21 @@ main:
     mov r1, #LED_YELLOW
     bl led
     
-wait_for_start:
+wait_for_startup:
 	bl check_buttons
 	and r0, r0, r0
-	beq wait_for_start
+	beq wait_for_startup
 	mov r0, #ALL_LEDS
     bl clear
 
-start_game:
+	mov r1, #0x01
+wait_game_start:
+	bl check_buttons
+	cmp r0, r1
+	beq wait_game_start
 
+game_starts:
+	
 
 ; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 clear:
