@@ -89,25 +89,28 @@ game_starts:
 
 
 blink:
-	mov r2, r0
-	mov r3, r1
+	push 	lr
+	mov 	r2, r1
+	mov 	r1, r0
 
 	mov 	r0, #ALL_LEDS
-	mov 	r1, r2
 	bl 		led
 
-	mov 	r0, #0x05
+	mov 	r0, r2
 	bl 		sleep
 	
 	mov 	r0, #ALL_LEDS
 	bl 		clear
 	
-	mov 	r0, #0x05
+	mov 	r0, r2
 	bl 		sleep
 
+	pop pc
+
 game_won:
-
-
+	mov		r0, #LED_GREEN
+	mov		r1, #5
+	bl 		blink
 	
 	mov 	r0, #ALL_LEDS
 	mov 	r1, #LED_GREEN
