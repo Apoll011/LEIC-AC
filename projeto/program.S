@@ -3,129 +3,151 @@
 ; Autor:     A54193 & A53107
 ; Data:      5-10-2026
 
-    .equ	STACK_SIZE, 64
+    .equ	STACK_SIZE, 	64
 
-	.equ	ALL_ONES, 0xFFFF
-	.equ	ALL_ZEROS, 0x0000
+	.equ	ALL_ONES,		0xFFFF
+	.equ	ALL_ZEROS, 		0x0000
 
 	.equ	INPORT_ADDRESS, 0xFF80
-	.equ	OUTPORT_ADDRESS, 0xFFC0
+	.equ	OUTPORT_ADDRESS,0xFFC0
 
-    .equ    LED0_MASK, 0x01
-    .equ    LED1_MASK, 0x02
-    .equ    LED2_MASK, 0x04
-    .equ    LED3_MASK, 0x08
+    .equ    LED0_MASK,		0x01
+    .equ    LED1_MASK,		0x02
+    .equ    LED2_MASK,		0x04
+    .equ    LED3_MASK,		0x08
 
-    .equ    LED_BLACK, 0x00
-    .equ    LED_RED, 0x01
-    .equ    LED_GREEN, 0x02
-    .equ    LED_YELLOW, 0x03
-	.equ 	ALL_LEDS, LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK
+    .equ	LED_BLACK,		0x00
+    .equ    LED_RED,		0x01
+    .equ    LED_GREEN,	 	0x02
+    .equ    LED_YELLOW, 	0x03
+	.equ 	ALL_LEDS, 		LED0_MASK | LED1_MASK | LED2_MASK | LED3_MASK
 
-	.equ  PTC_BASE,     0xFF
-    .equ  PTC_TCR,      0b0000
-    .equ  PTC_TMR,      0b0010
-    .equ  PTC_TC,       0b0100
-    .equ  PTC_TIR,      0b0110
+	.equ  	PTC_BASE,     	0xFF00
+    .equ  	PTC_TCR,      	0x00
+	.equ  	PTC_TMR,      	0x02
+    .equ  	PTC_TC,       	0x04
+    .equ  	PTC_TIR,      	0x06
 
-	.text
-	b	program
-	b	ptc_isr
+.text
+	b		program
+	b		ptc_isr
+
 program:
-	ldr	sp, stack_top_addr
-	b	main
+	ldr		sp, stack_top_addr
+	b		main
 
 stack_top_addr:
 	.word	stack_top
 
 main:
 	bl ptc_init
+
+	; Enable Interrupts
+	mrs		r0, cpsr
+	mov		r1, #0x0010
+	orr		r0, r0, r1
+	msr		cpsr, r0
+
+	; Initial LED sequence
+    mov 	r0, #ALL_LEDS
+    bl 		clear
+
+	mov 	r0, #ALL_LEDS
+    mov 	r1, #LED_YELLOW
+    bl 		led
+    
+	wait_for_startup:
+		bl	check_buttons
+
+		and r0, r0, r0
+		bzs wait_for_startup
+
+		mov r0, #ALL_LEDS
+		bl	clear
+
+		mov r4, #0x01
+		mov r5, #0
+
+	wait_game_start:
+		add r5, r5, #1
+
+		bl	check_buttons
+
+		cmp r0, r4
+		bne wait_game_start
+		
+		and r5, r5, r5
+		bzc	pre_game
+		
+		mov r0, r5
+
+	pre_game:
+		bl	init_random
 	
-	mrs     r0, cpsr
-    mov     r1, #0x0010
-    mvn     r1, r1
-    and     r0, r0, r1
-    msr     cpsr, r0
-
-	bl init_random
-
-	mov r0, #ALL_LEDS
-    bl clear
-    
-    mov r0, #ALL_LEDS
-    mov r1, #LED_RED
-    bl led
-    
-    mov r0, #500
-    bl sleep
-    
-    mov r0, #ALL_LEDS
-    bl clear
-
-	mov r0, #ALL_LEDS
-    mov r1, #LED_YELLOW
-    bl led
-    
-wait_for_startup:
-	bl check_buttons
-	and r0, r0, r0
-	beq wait_for_startup
-	mov r0, #ALL_LEDS
-    bl clear
-
-	mov r4, #0x01
-wait_game_start:
-	bl check_buttons
-	cmp r0, r4
-	bne wait_game_start
-
 game_starts:
-	b game_won
+	b 		game_won
 
+
+blink:
+	mov r2, r0
+	mov r3, r1
+
+	mov 	r0, #ALL_LEDS
+	mov 	r1, r2
+	bl 		led
+
+	mov 	r0, #0x05
+	bl 		sleep
+	
+	mov 	r0, #ALL_LEDS
+	bl 		clear
+	
+	mov 	r0, #0x05
+	bl 		sleep
 
 game_won:
-	mov r0, #ALL_LEDS
-	mov r1, #LED_GREEN
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
 
-	mov r0, #ALL_LEDS
-	mov r1, #LED_GREEN
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
 
-	mov r0, #ALL_LEDS
-	mov r1, #LED_GREEN
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
 	
-	b reset
+	mov 	r0, #ALL_LEDS
+	mov 	r1, #LED_GREEN
+	bl 		led
+
+	mov 	r0, #0x05
+	bl 		sleep
+	
+	mov 	r0, #ALL_LEDS
+	bl 		clear
+	
+	mov 	r0, #0x05
+	bl 		sleep
+
+	
+	mov 	r0, #ALL_LEDS
+	mov 	r1, #LED_GREEN
+	bl 		led
+
+	mov 	r0, #0x05
+	bl 		sleep
+	
+	mov 	r0, #ALL_LEDS
+	bl 		clear
+	
+	mov 	r0, #0x05
+	bl 		sleep
+	
+	b 		reset
 
 game_lost:
-	mov r0, #ALL_LEDS
-	mov r1, #LED_RED
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
+	mov 	r0, #ALL_LEDS
+	mov 	r1, #LED_RED
+	bl 		led
+	mov 	r0, #0x05
+	bl 		sleep
+	mov 	r0, #ALL_LEDS
+	bl 		clear
+	mov 	r0, #0x05
+	bl 		sleep
 
 	mov r0, #ALL_LEDS
 	mov r1, #LED_RED
@@ -226,10 +248,10 @@ led:
 		mov	r0, r3
 		bl	outport_write	; aplicar ao porto de saída
 		
-		pop	r5
-		pop	r4
-		pop	lr
-		mov	pc, lr
+	pop	r5
+	pop	r4
+	pop	lr
+	mov	pc, lr
 
 led_state_addr:
 	.word	led_state
@@ -271,8 +293,8 @@ addr_prev_buttons:
     .word prev_buttons
 
 init_random:
-	ldr r0, addr_random_state
-    str r0, [r0]
+	ldr r1, addr_random_state
+    str r0, [r1]
 
 get_random:
 	ldr r2, addr_random_state
@@ -300,17 +322,17 @@ outport_write:
 	mov	pc, lr
 
 inport_read:
-	mov	r1, #INPORT_ADDRESS & 0xFF
+	mov		r1, #INPORT_ADDRESS & 0xFF
 	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
 	ldrb	r0, [r1, #0]
 	mov	pc, lr
 
 ptc_init:
-    mov      r1, #0
-    movt     r1, #PTC_BASE
+	mov		r1, #PTC_BASE & 0xFF
+	movt	r1, #(PTC_BASE >> 8) & 0xFF
 
-    mov      r0, #0x01 
-    strb     r0, [r1, #PTC_TCR] ; Desativar Contagem
+    mov     r0, #0x01 
+    strb    r0, [r1, #PTC_TCR] ; Desativar Contagem
 
     mov     r0, #10
     strb    r0, [r1, #PTC_TMR]  ; Colocar 5 no TMR
@@ -333,11 +355,12 @@ ptc_start:
     ldr     r1, addr_sleep_running
     str     r0, [r1, #0]
 
-    mov      r1, #0
-    movt     r1, #PTC_BASE
+	mov		r1, #PTC_BASE & 0xFF
+	movt	r1, #(PTC_BASE >> 8) & 0xFF
 
-    ;mov      r0, #0x01
-    ;strb     r0, [r1, #PTC_TCR]
+
+    mov     r0, #0x01
+    strb    r0, [r1, #PTC_TCR]
 
     mov     r0, #0
     strb    r0, [r1, #PTC_TIR]
@@ -345,7 +368,7 @@ ptc_start:
     ; Arrancar (TCR=0)
     strb    r0, [r1, #PTC_TCR]
 
-ptc_start_done:
+	ptc_start_done:
     mov     pc, lr
 
 
@@ -359,8 +382,8 @@ ptc_done:
     mov     r0, #0
     mov     pc, lr
 
-ptc_done_yes:
-    mov     r0, #1
+	ptc_done_yes:
+    	mov     r0, #1
     mov     pc, lr
 
 
@@ -369,10 +392,10 @@ sleep:
     push    lr
     bl      ptc_start
 
-sleep_loop:
-    bl      ptc_done
-    and     r0, r0, r0
-    bzc     sleep_loop
+	sleep_loop:
+		bl      ptc_done
+		and     r0, r0, r0
+		bzc     sleep_loop
 
     pop     pc
 
@@ -382,8 +405,9 @@ ptc_isr:
     push    r1
     push    r2
 
-    mov     r1, #0
-    movt    r1, #PTC_BASE
+	mov		r1, #PTC_BASE & 0xFF
+	movt	r1, #(PTC_BASE >> 8) & 0xFF
+
     
     mov     r0, #0
     strb    r0, [r1, #PTC_TIR] ; Limpa o TIR
@@ -397,8 +421,9 @@ ptc_isr:
     and     r0, r0, r0
     bzc     ptc_isr_exit        ; ainda > 0, continuar
 
-    mov      r1, #0
-    movt     r1, #PTC_BASE
+	mov		r1, #PTC_BASE & 0xFF
+	movt	r1, #(PTC_BASE >> 8) & 0xFF
+
 
     mov      r0, #0x01
     strb     r0, [r1, #PTC_TCR]
@@ -408,7 +433,7 @@ ptc_isr:
     ldr     r1, addr_sleep_running
     str     r0, [r1, #0]
 
-ptc_isr_exit:
+	ptc_isr_exit:
     pop     r2
     pop     r1
     pop     r0
@@ -421,16 +446,17 @@ addr_sleep_count:
 addr_sleep_running:
 	.word sleep_running
 
-
-	.data
+.data
 led_state:
 	.word	0		; estado persistente dos 4 LEDs
 prev_buttons:
     .word 0x0F      ; todos os botões começam soltos (bit=1 = solto)
 random_state:
 	.word 	0
-sleep_count:    .word   0
-sleep_running:  .word   0
+sleep_count:    
+	.word   0
+sleep_running:  
+	.word   0
 	.stack
 	.space	STACK_SIZE
 stack_top:
