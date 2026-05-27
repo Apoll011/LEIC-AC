@@ -150,10 +150,10 @@ static void game_lost(void) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 void main(void) {
 
-restart:
     ptc_init();
     // (interrupts enabled here in assembly via CPSR)
 
+restart:
     // Show yellow on all LEDs at startup
     clear(ALL_LEDS);
     led(ALL_LEDS, LED_YELLOW);

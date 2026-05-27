@@ -39,9 +39,6 @@ program:
 stack_top_addr:
 	.word	stack_top
 
-reset:
-	b 		main
-
 main:
 	bl ptc_init
 
@@ -50,7 +47,8 @@ main:
 	mov		r1, #0x0010
 	orr		r0, r0, r1
 	msr		cpsr, r0
-
+	
+	reset:
 	; Initial LED sequence
     mov 	r0, #ALL_LEDS
     bl 		clear
