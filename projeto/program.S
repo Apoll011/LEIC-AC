@@ -56,7 +56,7 @@ main:
     mov r1, #LED_RED
     bl led
     
-    mov r0, #5
+    mov r0, #500
     bl sleep
     
     mov r0, #ALL_LEDS
@@ -346,7 +346,7 @@ ptc_start:
     strb    r0, [r1, #PTC_TCR]
 
 ptc_start_done:
-    pop     pc
+    mov     pc, lr
 
 
 ;  ptc_done — Verifica se o timer terminou.
