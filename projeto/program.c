@@ -164,13 +164,10 @@ restart:
     clear(ALL_LEDS);
 
     // Wait for button 1 specifically; count iterations as entropy seed
-    uint32_t r4 = 0x01;
     uint32_t r5 = 0;
-    uint32_t r0;
     do {
         r5++;
-        r0 = check_buttons();
-    } while (r0 != r4);
+    } while (check_buttons() != 0x01);
 
     // Use iteration count as seed (unless it's zero — use 0 then)
     uint32_t seed = (r5 != 0) ? r5 : 0;
