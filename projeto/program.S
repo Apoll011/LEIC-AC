@@ -39,6 +39,9 @@ program:
 stack_top_addr:
 	.word	stack_top
 
+reset:
+	b 		main
+
 main:
 	bl ptc_init
 
@@ -87,7 +90,37 @@ main:
 game_starts:
 	b 		game_won
 
+game_won:
+	mov		r0, #LED_GREEN
+	mov		r1, #5
+	bl 		blink
+	
+	mov		r0, #LED_GREEN
+	mov		r1, #5
+	bl 		blink
 
+	mov		r0, #LED_GREEN
+	mov		r1, #5
+	bl 		blink
+	
+	b 		reset
+
+game_lost:
+	mov		r0, #LED_RED
+	mov		r1, #5
+	bl 		blink
+	
+	mov		r0, #LED_RED
+	mov		r1, #5
+	bl 		blink
+
+	mov		r0, #LED_RED
+	mov		r1, #5
+	bl 		blink
+	
+	b 		reset
+
+; Blinks all the LED once in the r0 color and for r1 miliseconds
 blink:
 	push 	lr
 	mov 	r2, r1
@@ -107,83 +140,12 @@ blink:
 
 	pop pc
 
-game_won:
-	mov		r0, #LED_GREEN
-	mov		r1, #5
-	bl 		blink
-	
-	mov 	r0, #ALL_LEDS
-	mov 	r1, #LED_GREEN
-	bl 		led
-
-	mov 	r0, #0x05
-	bl 		sleep
-	
-	mov 	r0, #ALL_LEDS
-	bl 		clear
-	
-	mov 	r0, #0x05
-	bl 		sleep
-
-	
-	mov 	r0, #ALL_LEDS
-	mov 	r1, #LED_GREEN
-	bl 		led
-
-	mov 	r0, #0x05
-	bl 		sleep
-	
-	mov 	r0, #ALL_LEDS
-	bl 		clear
-	
-	mov 	r0, #0x05
-	bl 		sleep
-	
-	b 		reset
-
-game_lost:
-	mov 	r0, #ALL_LEDS
-	mov 	r1, #LED_RED
-	bl 		led
-	mov 	r0, #0x05
-	bl 		sleep
-	mov 	r0, #ALL_LEDS
-	bl 		clear
-	mov 	r0, #0x05
-	bl 		sleep
-
-	mov r0, #ALL_LEDS
-	mov r1, #LED_RED
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
-
-	mov r0, #ALL_LEDS
-	mov r1, #LED_RED
-	bl led
-	mov r0, #0x05
-	bl sleep
-	mov r0, #ALL_LEDS
-	bl clear
-	mov r0, #0x05
-	bl sleep
-
-	b reset
-
-reset:
-	b main
-
 ; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
 clear:
-    push lr
-    mov r1, #LED_BLACK
-    bl led
-    pop lr
-    mov pc, lr
+    push 	lr
+    mov 	r1, #LED_BLACK
+    bl 		led
+    pop 	pc
 
 
 ; led - Acende/apaga ALL_LEDs com persistência de estado
@@ -194,27 +156,29 @@ led:
 	push	r4
 	push	r5
 
-	mov	r4, r0			; r4 = máscara
-	mov	r5, r1			; r5 = cor
+	mov		r4, r0			; r4 = máscara
+	mov		r5, r1			; r5 = cor
 
-	ldr	r2, led_state_addr
+	ldr		r2, led_state_addr
 	ldrb	r3, [r2]		; r3 = estado atual do porto
 
 	; --- LED0 ---
-	mov	r0, #0x01
-	and	r0, r4, r0		; bit 0 da máscara
-	beq	led_skip0
-	mov	r0, #0xFC		; 1111 1100 — limpa bits 1:0
-	and	r3, r3, r0
-	mov	r0, #0x03
-	and	r0, r5, r0		; cor & 0x03 → posição 0
-	orr	r3, r3, r0
+	mov		r0, #0x01
+	and		r0, r4, r0		; bit 0 da máscara
+	beq		led_skip0
+	
+	mov		r0, #0xFC		; 1111 1100 — limpa bits 1:0
+	and		r3, r3, r0
+	mov		r0, #0x03
+	and		r0, r5, r0		; cor & 0x03 → posição 0
+	orr		r3, r3, r0
 
 	led_skip0:
 		; --- LED1 ---
 		mov	r0, #0x02
 		and	r0, r4, r0		; bit 1 da máscara
 		beq	led_skip1
+		
 		mov	r0, #0xF3		; 1111 0011 — limpa bits 3:2
 		and	r3, r3, r0
 		lsl	r0, r5, #2		; cor << 2 → posição 2
@@ -222,11 +186,11 @@ led:
 		and	r0, r0, r1
 		orr	r3, r3, r0
 	led_skip1:
-
 		; --- LED2 ---
 		mov	r0, #0x04
 		and	r0, r4, r0		; bit 2 da máscara
 		beq	led_skip2
+		
 		mov	r0, #0xCF		; 1100 1111 — limpa bits 5:4
 		and	r3, r3, r0
 		lsl	r0, r5, #4		; cor << 4 → posição 4
@@ -234,11 +198,11 @@ led:
 		and	r0, r0, r1
 		orr	r3, r3, r0
 	led_skip2:
-
 		; --- LED3 ---
 		mov	r0, #0x08
 		and	r0, r4, r0		; bit 3 da máscara
 		beq	led_skip3
+		
 		mov	r0, #0x3F		; 0011 1111 — limpa bits 7:6
 		and	r3, r3, r0
 		lsl	r0, r5, #6		; cor << 6 → posição 6
@@ -247,14 +211,14 @@ led:
 		orr	r3, r3, r0
 	led_skip3:
 
-		strb	r3, [r2]	; guardar novo estado em led_state
+		strb r3, [r2]	; guardar novo estado em led_state
 		mov	r0, r3
 		bl	outport_write	; aplicar ao porto de saída
 		
-	pop	r5
-	pop	r4
-	pop	lr
-	mov	pc, lr
+	pop		r5
+	pop		r4
+	pop		lr
+	mov		pc, lr
 
 led_state_addr:
 	.word	led_state
@@ -267,68 +231,68 @@ led_state_addr:
 ;       bit3=1 → botão 4 clicado
 ;       r0=0   → nenhum botão clicado
 check_buttons:
-    push lr
+    push 	lr
 
-    bl  inport_read             ; r0 = valor atual da entrada
+    bl  	inport_read             ; r0 = valor atual da entrada
 
     ; Isolar apenas os 4 bits dos botões (bits 3:0)
-    mov r1, #0x0F
-    and r0, r0, r1              ; r0 = estado atual dos 4 botões
+    mov 	r1, #0x0F
+    and 	r0, r0, r1              ; r0 = estado atual dos 4 botões
 
     ; Carregar estado anterior
-    ldr r2, addr_prev_buttons
-    ldr r3, [r2]                ; r3 = estado anterior
+    ldr 	r2, addr_prev_buttons
+    ldr 	r3, [r2]                ; r3 = estado anterior
 
     ; Guardar estado atual como novo "anterior"
-    str r0, [r2]
+    str 	r0, [r2]
 
     ; cliques = prev AND NOT(atual)  →  flancos de descida
-    mvn r1, r0
-    and r0, r3, r1
+    mvn 	r1, r0
+    and 	r0, r3, r1
 
     ; Mascarar para garantir apenas bits 3:0
-    mov r1, #0x0F
-    and r0, r0, r1              ; r0 = máscara de cliques
+    mov 	r1, #0x0F
+    and 	r0, r0, r1              ; r0 = máscara de cliques
 
-    pop pc
+    pop 	pc
 
 addr_prev_buttons:
-    .word prev_buttons
+    .word 	prev_buttons
 
 init_random:
-	ldr r1, addr_random_state
-    str r0, [r1]
+	ldr 	r1, addr_random_state
+    str 	r0, [r1]
 
 get_random:
-	ldr r2, addr_random_state
-    ldr r0, [r2]
+	ldr 	r2, addr_random_state
+    ldr 	r0, [r2]
 
-	lsl r1, r0, #7
-	eor r0, r0, r1      
+	lsl 	r1, r0, #7
+	eor 	r0, r0, r1      
 
-	lsr r1, r0, #5
-	eor r0, r0, r1   
+	lsr 	r1, r0, #5
+	eor 	r0, r0, r1   
 	
-	lsl r1, r0, #3
-	eor r0, r0, r1   
+	lsl 	r1, r0, #3
+	eor 	r0, r0, r1   
 	
-	str r0, [r2]
-	mov pc, lr
+	str 	r0, [r2]
+	mov 	pc, lr
 
 addr_random_state:
-	.word random_state
+	.word	random_state
 
 outport_write:
-	mov	r1, #OUTPORT_ADDRESS & 0xFF
+	mov		r1, #OUTPORT_ADDRESS & 0xFF
 	movt	r1, #(OUTPORT_ADDRESS >> 8) & 0xFF
 	strb	r0, [r1, #0]
-	mov	pc, lr
+	mov		pc, lr
 
 inport_read:
 	mov		r1, #INPORT_ADDRESS & 0xFF
 	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
 	ldrb	r0, [r1, #0]
-	mov	pc, lr
+	mov		pc, lr
 
 ptc_init:
 	mov		r1, #PTC_BASE & 0xFF
@@ -386,8 +350,9 @@ ptc_done:
     mov     pc, lr
 
 	ptc_done_yes:
-    	mov     r0, #1
-    mov     pc, lr
+    	mov r0, #1
+    
+	mov     pc, lr
 
 
 ; Dorme pelo tempo em r0
@@ -396,9 +361,9 @@ sleep:
     bl      ptc_start
 
 	sleep_loop:
-		bl      ptc_done
-		and     r0, r0, r0
-		bzc     sleep_loop
+		bl	ptc_done
+		and	r0, r0, r0
+		bzc	sleep_loop
 
     pop     pc
 
@@ -428,8 +393,8 @@ ptc_isr:
 	movt	r1, #(PTC_BASE >> 8) & 0xFF
 
 
-    mov      r0, #0x01
-    strb     r0, [r1, #PTC_TCR]
+    mov     r0, #0x01
+    strb    r0, [r1, #PTC_TCR]
 
     ; Marcar como terminado
     mov     r0, #0
@@ -445,9 +410,9 @@ ptc_isr:
 
 
 addr_sleep_count:
-	.word sleep_count
+	.word 	sleep_count
 addr_sleep_running:
-	.word sleep_running
+	.word 	sleep_running
 
 .data
 led_state:
