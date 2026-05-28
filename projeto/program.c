@@ -36,6 +36,7 @@ static uint32_t prev_buttons  = 0x0F;  // all buttons released
 static uint32_t random_state  = 0;
 static uint32_t sleep_count   = 0;
 static uint32_t sleep_running = 0;
+static uint8_t  round = 0;
 
 // ── Low-level I/O ─────────────────────────────────────────────────────────────
 static void outport_write(uint8_t val) { *OUTPORT = val; }
@@ -147,7 +148,46 @@ static void game_lost(void) {
     // falls through to main() — equivalent to "b reset"
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+static void game_start(void) {
+    round = 0;
+
+    uint8_t level = (inport_read() & 0b11100000) >> 5;
+
+    uint8_t time = 10 - level - (get_random() & 0x01); // Somting Arround 10 and 1 seconds
+    
+    uint8_t[] moles_test = [0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111];
+
+    while (round <= 9) {
+        ptc_start(time*10);
+        
+        uint8_t current_m = moles_test[round];
+        led(current_m, LED_GREEN);
+        
+        do {
+            if (current_m == 0) break;
+
+            uint8_t matched = current_m & check_buttons();
+
+            led(matched, LED_RED);
+
+            current_m ^= matched;
+        } while (!ptc_done());
+
+        if (current_m != 0) break;
+
+        clear();
+        sleep(5);
+
+        round++;
+    }
+
+    if (round < 9) {
+        game_lost();
+    } else {
+        game_won();
+    }
+}
+
 void main(void) {
 
     ptc_init();

@@ -39,6 +39,7 @@ program:
 stack_top_addr:
 	.word	stack_top
 
+; --------------- Game Logic ----------------------
 main:
 	bl ptc_init
 
@@ -84,9 +85,22 @@ main:
 
 	pre_game:
 		bl	init_random
-	
+
 game_starts:
-	b 		game_won
+	push	lr
+
+	mov 	r0, #0
+	ldr 	r1, round_addr
+	strb 	r0, [r1, #0]
+
+	mov		r1, #0b11100000
+	bl 		inport_read
+	and 	r0, r0, r1
+	lsr 	r0, r0, #5
+
+	mov 	r2, r0
+
+	
 
 game_won:
 	mov		r0, #LED_GREEN
@@ -118,6 +132,22 @@ game_lost:
 	
 	b 		reset
 
+round_addr:
+	.word round
+
+; ----------------- Low-level I/O --------------------
+outport_write:
+	mov		r1, #OUTPORT_ADDRESS & 0xFF
+	movt	r1, #(OUTPORT_ADDRESS >> 8) & 0xFF
+	strb	r0, [r1, #0]
+	mov		pc, lr
+
+inport_read:
+	mov		r1, #INPORT_ADDRESS & 0xFF
+	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
+	ldrb	r0, [r1, #0]
+	mov		pc, lr
+; ----------------- LED control --------------------
 ; Blinks all the LED once in the r0 color and for r1 miliseconds
 blink:
 	push 	lr
@@ -221,13 +251,7 @@ led:
 led_state_addr:
 	.word	led_state
 
-; check_buttons - Deteta cliques (flanco de descida) nos 4 botões
-;   Retorna em r0: máscara de botões clicados neste ciclo
-;       bit0=1 → botão 1 clicado
-;       bit1=1 → botão 2 clicado
-;       bit2=1 → botão 3 clicado
-;       bit3=1 → botão 4 clicado
-;       r0=0   → nenhum botão clicado
+; ------------------- Button edge detection ---------------------
 check_buttons:
     push 	lr
 
@@ -257,6 +281,7 @@ check_buttons:
 addr_prev_buttons:
     .word 	prev_buttons
 
+; -------------------- PRNG (XORShift) ---------------------------
 init_random:
 	ldr 	r1, addr_random_state
     str 	r0, [r1]
@@ -280,18 +305,7 @@ get_random:
 addr_random_state:
 	.word	random_state
 
-outport_write:
-	mov		r1, #OUTPORT_ADDRESS & 0xFF
-	movt	r1, #(OUTPORT_ADDRESS >> 8) & 0xFF
-	strb	r0, [r1, #0]
-	mov		pc, lr
-
-inport_read:
-	mov		r1, #INPORT_ADDRESS & 0xFF
-	movt	r1, #(INPORT_ADDRESS >> 8) & 0xFF
-	ldrb	r0, [r1, #0]
-	mov		pc, lr
-
+; ----------------- pTC timer     -------------------- 
 ptc_init:
 	mov		r1, #PTC_BASE & 0xFF
 	movt	r1, #(PTC_BASE >> 8) & 0xFF
@@ -308,7 +322,6 @@ ptc_init:
     mov     pc, lr
 
 
-;  ptc_start — Arranca o timer.
 ptc_start:
     and     r0, r0, r0
     bzs     ptc_start_done
@@ -337,7 +350,6 @@ ptc_start:
     mov     pc, lr
 
 
-;  ptc_done — Verifica se o timer terminou.
 ptc_done:
     ldr     r1, addr_sleep_running
     ldr     r0, [r1, #0]
@@ -353,7 +365,6 @@ ptc_done:
 	mov     pc, lr
 
 
-; Dorme pelo tempo em r0
 sleep:
     push    lr
     bl      ptc_start
@@ -413,16 +424,12 @@ addr_sleep_running:
 	.word 	sleep_running
 
 .data
-led_state:
-	.word	0		; estado persistente dos 4 LEDs
-prev_buttons:
-    .word 0x0F      ; todos os botões começam soltos (bit=1 = solto)
-random_state:
-	.word 	0
-sleep_count:    
-	.word   0
-sleep_running:  
-	.word   0
+led_state:		.word	0		; estado persistente dos 4 LEDs
+prev_buttons:	.word 	0x0F    ; todos os botões começam soltos (bit=1 = solto)
+random_state:	.word 	0
+sleep_count:    .word   0
+sleep_running:  .word   0
+round:			.word  	0
 	.stack
 	.space	STACK_SIZE
 stack_top:
