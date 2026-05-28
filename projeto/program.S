@@ -108,7 +108,7 @@ WHILE:
 
 	mov 	r1, #9
 	cmp 	r1, r4
-	bge 	
+	bge		WHILE
 
 	
 
