@@ -97,8 +97,18 @@ game_starts:
 	bl 		inport_read
 	and 	r0, r0, r1
 	lsr 	r0, r0, #5
+	mov 	r1, #10
+	sub 	r5, r1, r0
+WHILE:
+	mov 	r0, #0
+	ldr 	r1, round_addr
+	ldrb 	r4, [r1, #0]
 
-	mov 	r2, r0
+
+
+	mov 	r1, #9
+	cmp 	r1, r4
+	bge 	
 
 	
 
@@ -424,6 +434,7 @@ addr_sleep_running:
 	.word 	sleep_running
 
 .data
+Mole_test: 		.word 	0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111
 led_state:		.word	0		; estado persistente dos 4 LEDs
 prev_buttons:	.word 	0x0F    ; todos os botões começam soltos (bit=1 = solto)
 random_state:	.word 	0
