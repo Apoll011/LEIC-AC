@@ -152,7 +152,7 @@ round_while_end:
 	bl 		sleep
 
 	add 	r4, r4, #1
-	mov 	r1, round_addr
+	ldr 	r1, round_addr
 	strb 	r4, [r1, #0]
 
 	mov 	r5, #9
@@ -170,6 +170,10 @@ else:
 	b 		game_won
 	
 
+round_addr:
+	.word round
+moles_addr:
+	.word Mole_test
 
 
 game_won:
@@ -201,11 +205,6 @@ game_lost:
 	bl 		blink
 	
 	b 		reset
-
-round_addr:
-	.word round
-moles_addr:
-	.word Mole_test
 
 ; ----------------- Low-level I/O --------------------
 outport_write:
