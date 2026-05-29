@@ -161,13 +161,9 @@ round_while_end:
 
 main_while_end:
 		
-	cmp 	r4, r5
-	blo 	else
-	b 		game_lost
-	
-else:
-
-	b 		game_won
+    cmp  r5, r4
+    bge  game_lost
+    b    game_won
 	
 
 round_addr:
@@ -469,9 +465,6 @@ ptc_isr:
     and     r0, r0, r0
     bzc     ptc_isr_exit        ; ainda > 0, continuar
 
-	mov		r1, #PTC_BASE & 0xFF
-	movt	r1, #(PTC_BASE >> 8) & 0xFF
-
 
     mov     r0, #0x01
     strb    r0, [r1, #PTC_TCR]
@@ -495,7 +488,7 @@ addr_sleep_running:
 	.word 	sleep_running
 
 .data
-Mole_test: 		.word 	0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111
+Mole_test: 		.byte 	0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111
 led_state:		.word	0		; estado persistente dos 4 LEDs
 prev_buttons:	.word 	0x0F    ; todos os botões começam soltos (bit=1 = solto)
 random_state:	.word 	0
