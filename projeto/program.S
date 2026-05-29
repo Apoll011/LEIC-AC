@@ -152,7 +152,7 @@ round_while_end:
 	bl 		sleep
 
 	add 	r4, r4, #1
-	mov 	r1, #round_addr
+	mov 	r1, round_addr
 	strb 	r4, [r1, #0]
 
 	mov 	r5, #9
@@ -205,7 +205,7 @@ game_lost:
 round_addr:
 	.word round
 moles_addr:
-	.word moles
+	.word Mole_test
 
 ; ----------------- Low-level I/O --------------------
 outport_write:
