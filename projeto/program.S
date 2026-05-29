@@ -323,7 +323,7 @@ ptc_init:
     mov     r0, #0x01 
     strb    r0, [r1, #PTC_TCR] ; Desativar Contagem
 
-    mov     r0, #10
+    mov     r0, #100
     strb    r0, [r1, #PTC_TMR]  ; Colocar 5 no TMR
 
     mov     r0, #0
