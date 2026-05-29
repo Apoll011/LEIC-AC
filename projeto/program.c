@@ -157,7 +157,7 @@ static void game_start(void) {
     
     uint8_t[] moles_test = [0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111];
 
-    while (round <= 9) {
+    do {
         ptc_start(time*10);
         
         uint8_t current_m = moles_test[round];
@@ -168,18 +168,19 @@ static void game_start(void) {
 
             uint8_t matched = current_m & check_buttons();
 
+            current_m ^= matched;
+
             led(matched, LED_RED);
 
-            current_m ^= matched;
         } while (!ptc_done());
 
         if (current_m != 0) break;
 
-        clear();
+        clear(ALL_LEDS);
         sleep(5);
 
         round++;
-    }
+    } while (round <= 9);
 
     if (round < 9) {
         game_lost();

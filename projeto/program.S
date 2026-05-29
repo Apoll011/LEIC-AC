@@ -98,9 +98,79 @@ game_starts:
 	and 	r0, r0, r1
 	lsr 	r0, r0, #5
 
-	mov 	r2, r0
+	mov 	r1, #10
+	sub 	r5, r1, r0
+
+main_while:
+;r4 = round
+;r5 = time
+;r6 = current moles
+	ldr 	r1, round_addr
+	ldrb 	r4, [r1, #0]
+
+
+	lsr 	r3, r5, #3
+	lsr 	r5, r5, #1
+	add 	r5, r5, r3
+	mov 	r0, r5
+	bl      ptc_start
 
 	
+	ldr 	r1, moles_addr
+	ldrb 	r6, [r1, r4]
+	
+	mov 	r0, r6
+	mov 	r1, #LED_GREEN
+	bl 		led
+
+round_while:
+
+	and 	r6, r6, r6
+	bzs 	round_while_end
+
+	bl      check_buttons
+	and 	r0, r6, r0
+
+	eor 	r6, r6, r0
+
+	mov 	r1, #LED_RED
+	bl 		led
+
+	bl      ptc_done
+	and 	r0, r0, r0
+	bzc 	round_while
+
+round_while_end:
+
+	and 	r6, r6, r6
+	bzs 	main_while_end
+
+	mov 	r0, #ALL_LEDS
+	bl 		clear
+
+	mov 	r0, #5
+	bl 		sleep
+
+	add 	r4, r4, #1
+	mov 	r1, #round_addr
+	strb 	r4, [r1, #0]
+
+	mov 	r5, #9
+	cmp 	r5, r4
+	bge     main_while
+
+main_while_end:
+		
+	cmp 	r4, r5
+	blo 	else
+	b 		game_lost
+	
+else:
+
+	b 		game_won
+	
+
+
 
 game_won:
 	mov		r0, #LED_GREEN
@@ -134,6 +204,8 @@ game_lost:
 
 round_addr:
 	.word round
+moles_addr:
+	.word moles
 
 ; ----------------- Low-level I/O --------------------
 outport_write:
