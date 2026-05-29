@@ -385,7 +385,7 @@ ptc_init:
     mov     r0, #0x01 
     strb    r0, [r1, #PTC_TCR] ; Desativar Contagem
 
-    mov     r0, #10
+    mov     r0, #100
     strb    r0, [r1, #PTC_TMR]  ; Colocar 5 no TMR
 
     mov     r0, #0
@@ -496,6 +496,7 @@ addr_sleep_running:
 	.word 	sleep_running
 
 .data
+Mole_test: 		.word 	0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111
 led_state:		.word	0		; estado persistente dos 4 LEDs
 prev_buttons:	.word 	0x0F    ; todos os botões começam soltos (bit=1 = solto)
 random_state:	.word 	0
