@@ -1,6 +1,5 @@
 p16
-
-ext_irq=6,FF06,0
+ext_irq=6,3
 
 ram
 id=0
@@ -29,3 +28,4 @@ id=6
 databus=P16Low
 addrsel=FF00,FF07
 clk=100Hz
+clkref=Manual
