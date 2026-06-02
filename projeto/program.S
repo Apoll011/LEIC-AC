@@ -116,8 +116,8 @@ main_while:
 	bl      ptc_start
 
 	
-	ldr 	r1, moles_addr
-	ldrb 	r6, [r1, r4]
+	bl 		get_moles
+	mov 	r6, r0
 	
 	mov 	r0, r6
 	mov 	r1, #LED_GREEN
@@ -374,9 +374,96 @@ get_random:
 	str 	r0, [r2]
 	mov 	pc, lr
 
+
 addr_random_state:
 	.word	random_state
 
+; get_moles - retorna em r0 a máscara de toupeiras para a ronda
+;   r4 = round (caller-saved, lido diretamente)
+; Retorna:
+;   r0 = máscara de LEDs (1 bit por toupeira)
+
+get_moles:
+    push    lr
+    push    r4
+    push    r5
+
+    ldr     r1, round_addr_
+    ldrb    r4, [r1, #0]        ; r4 = round atual
+
+    mov     r1, #4
+    cmp     r4, r1
+    bge     get_moles_multi
+
+    ; ── Rondas 0-3: exactamente 1 toupeira aleatória ──────────────────
+    bl      get_random
+    mov     r1, #0x03
+    and     r0, r0, r1          ; rand % 4 → bit index 0..3
+    ; 1 << r0 sem lsl variável: tabela de 4 entradas
+    ldr     r1, single_moles_addr
+    ldrb    r0, [r1, r0]
+    b       get_moles_done
+
+    ; ── Rondas 4+: 2 ou mais toupeiras ───────────────────────────────
+get_moles_multi:
+    ; bit_count = 2 + (rand % (round - 2)), clamp 4
+    mov     r1, #2
+    sub     r1, r4, r1          ; r1 = round - 2
+    bl      get_random
+    mov     r2, #0x03
+    and     r0, r0, r2          ; rand & 0x03 (aprox % pequeno)
+    mov     r2, #2
+    add     r5, r0, r2          ; r5 = bit_count >= 2
+	mov     r2, #4
+    cmp     r5, r2
+    blt     get_moles_fill      ; se bit_count < 4, não faz clamp
+    mov     r5, r2              ; clamp a 4
+
+    mov     r4, #0              ; r4 = resultado acumulado
+
+get_moles_fill:
+    mov     r0, r4
+    bl      popcount            ; r0 = popcount(r4)
+    cmp     r0, r5
+    bge     get_moles_result
+
+    bl      get_random
+    mov     r1, #0x03
+    and     r0, r0, r1          ; bit index 0..3
+    ldr     r1, single_moles_addr
+    ldrb    r1, [r1, r0]        ; 1 << index via tabela
+    orr     r4, r4, r1
+    b       get_moles_fill
+
+get_moles_result:
+    mov     r0, r4
+
+get_moles_done:
+    pop     r5
+    pop     r4
+    pop     pc
+
+single_moles_addr:
+    .word   single_moles
+
+; ── popcount: conta bits a 1 em r0, retorna em r0 ────────────────────
+popcount:
+    push    lr
+    mov     r1, #0
+popcount_loop:
+    mov     r2, #0
+    cmp     r0, r2
+    beq     popcount_done
+    mov     r2, #1
+    and     r3, r0, r2          ; bit menos significativo
+    add     r1, r1, r3
+    lsr     r0, r0, #1          ; constante — ok
+    b       popcount_loop
+popcount_done:
+    mov     r0, r1
+    pop     pc
+round_addr_:
+	.word round
 ; ----------------- pTC timer     -------------------- 
 ptc_init:
     mov     r1, #PTC_BASE & 0xFF
@@ -485,6 +572,7 @@ addr_sleep_running:
 	.word 	sleep_running
 
 .data
+single_moles:   .byte   0x01, 0x02, 0x04, 0x08
 Mole_test: 		.byte 	0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111
 led_state:		.word	0		; estado persistente dos 4 LEDs
 prev_buttons:	.word 	0x0F    ; todos os botões começam soltos (bit=1 = solto)
