@@ -377,7 +377,7 @@ ptc_init:
     mov     r1, #PTC_BASE & 0xFF
     movt    r1, #(PTC_BASE >> 8) & 0xFF
 
-    mov     r0, #0x03           ; bit0=stop, bit1=int enable
+    mov     r0, #0x01           
     strb    r0, [r1, #PTC_TCR]  ; parar pTC com interrupções ativas
 
     mov     r0, #100
@@ -399,13 +399,13 @@ ptc_start:
     mov     r1, #PTC_BASE & 0xFF
     movt    r1, #(PTC_BASE >> 8) & 0xFF
 
-    mov     r0, #0x03           ; parar + int enable
+    mov     r0, #0x01           ; parar + int enable
     strb    r0, [r1, #PTC_TCR]
 
     mov     r0, #0
     strb    r0, [r1, #PTC_TIR]  ; limpar TIR antes de arrancar
 
-    mov     r0, #0x02           ; arrancar com int enable (bit1=1, bit0=0)
+    mov     r0, #0x00           ; arrancar com int enable (bit1=1, bit0=0)
     strb    r0, [r1, #PTC_TCR]
 
 ptc_start_done:
@@ -451,7 +451,7 @@ ptc_isr:
     bzc     ptc_isr_exit        ; Z=0 → ainda > 0, continuar
 
     ; sleep_count chegou a 0: parar pTC
-    mov     r0, #0x03           ; stop + int enable (mantém enable para próximo ptc_start)
+    mov     r0, #0x01           ; stop + int enable (mantém enable para próximo ptc_start)
     strb    r0, [r1, #PTC_TCR]
 
 ptc_isr_exit:
