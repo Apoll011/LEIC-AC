@@ -148,6 +148,22 @@ static void game_lost(void) {
     // falls through to main() — equivalent to "b reset"
 }
 
+static uint8_t get_moles(uint8_t round) {
+    if (round < 4) {
+        uint8_t single_moles[] = { 0b0001, 0b0010, 0b0100, 0b1000 };
+        return single_moles[get_random() % 4];
+    }
+
+    uint8_t bit_count = 2 + (get_random() % (round - 2));
+    if (bit_count > 4) bit_count = 4;
+
+    uint8_t result = 0;
+    while (__builtin_popcount(result) < bit_count) {
+        result |= (1 << (get_random() % 4));
+    }
+    return result;
+}
+
 static void game_start(void) {
     round = 0;
 
@@ -155,12 +171,11 @@ static void game_start(void) {
 
     uint8_t time = 10 - level - (get_random() & 0x01); // Somting Arround 10 and 1 seconds
     
-    uint8_t[] moles_test = [0b0001, 0b1000, 0b0010, 0b0100, 0b0110, 0b1010, 0b0111, 0b1011, 0b1101, 0b1111];
 
     do {
         ptc_start(time*10);
         
-        uint8_t current_m = moles_test[round];
+        uint8_t current_m = get_moles(round);
         led(current_m, LED_GREEN);
         
         do {
