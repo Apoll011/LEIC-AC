@@ -143,7 +143,7 @@ round_while:
 round_while_end:
 
 	and 	r6, r6, r6
-	bzs 	main_while_end
+	bzc 	main_while_end
 
 	mov 	r0, #5
 	bl sleep
