@@ -28,4 +28,3 @@ id=6
 databus=P16Low
 addrsel=FF00,FF3F
 clk=100Hz
-clkref=Manual

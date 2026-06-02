@@ -109,8 +109,8 @@ main_while:
 	ldrb 	r4, [r1, #0]
 
 
-	lsr 	r3, r5, #3
-	lsr 	r5, r5, #1
+	lsl 	r3, r5, #3
+	lsl 	r5, r5, #1
 	add 	r5, r5, r3
 	mov 	r0, r5
 	bl      ptc_start
@@ -138,7 +138,7 @@ round_while:
 
 	bl      ptc_done
 	and 	r0, r0, r0
-	bzc 	round_while
+	bzs 	round_while
 
 round_while_end:
 
@@ -218,21 +218,23 @@ inport_read:
 ; Blinks all the LED once in the r0 color and for r1 miliseconds
 blink:
 	push 	lr
-	mov 	r2, r1
+	push 	r4
+	mov 	r4, r1
 	mov 	r1, r0
 
 	mov 	r0, #ALL_LEDS
 	bl 		led
 
-	mov 	r0, r2
+	mov 	r0, r4
 	bl 		sleep
 	
 	mov 	r0, #ALL_LEDS
 	bl 		clear
 	
-	mov 	r0, r2
+	mov 	r0, r4
 	bl 		sleep
 
+	pop 	r4
 	pop pc
 
 ; r0 - máscara de ALL_LEDs a afetar (bit0=LED0, bit1=LED1, bit2=LED2, bit3=LED3)
@@ -460,13 +462,6 @@ ptc_isr_exit:
     pop     r0
     pop     lr
     movs    pc, lr
-    ldr     r1, addr_sleep_running
-    ldr     r0, [r1, #0]
-    and     r0, r0, r0
-    bzs     ptc_done_yes 
-
-    mov     r0, #0
-    mov     pc, lr
 
 
 sleep:
@@ -476,7 +471,7 @@ sleep:
 	sleep_loop:
 		bl	ptc_done
 		and	r0, r0, r0
-		bzc	sleep_loop
+		bzs	sleep_loop
 
     pop     pc
 

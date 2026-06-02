@@ -1,4 +1,17 @@
+; =============================================================================
+; FICHEIRO:    toupeira.s
+; DESCRIÇÃO:   Implementação do Jogo "Caça à Toupeira" para o processador P16.
+;              Otimizado para compilação robusta no assembler p16as.exe:
+;              - Uso exclusivo de apontadores PC-relativos (LDR) de curto alcance
+;                com as tabelas/variáveis (literal pools) locais em .text.
+;              - Zero operações de bits (&, >>) sobre etiquetas em instruções MOV.
+;              - Compatibilidade total com teste_botao.s e teste_led_bicolor.s.
+; AUTOR:       Antigravity (AC 2025/2026)
+; =============================================================================
 
+; -----------------------------------------------------------------------------
+; Definição de Constantes de Hardware
+; -----------------------------------------------------------------------------
 .equ IN_PORT,   0xFF80          ; Porto paralelo de entrada
 .equ OUT_PORT,  0xFFC0          ; Porto paralelo de saída
 
@@ -24,11 +37,17 @@
 .equ ALL_GREEN,  0xAA           ; Todos os LEDs a verde
 .equ ALL_RED,    0x55           ; Todos os LEDs a vermelho
 
+; -----------------------------------------------------------------------------
+; Secção de Código (.text) e Tabela de Vetores de Interrupção
+; -----------------------------------------------------------------------------
 .text
 
     b program                   ; Endereço 0x0000: Salto para o programa principal
     b interrupt_handler         ; Endereço 0x0002: Salto para a ISR (Vetor de Interrupção)
 
+; -----------------------------------------------------------------------------
+; Programa Principal
+; -----------------------------------------------------------------------------
 program:
 
     ; 1. Inicializar o Stack Pointer de forma PC-relativa curta
@@ -46,8 +65,7 @@ main_init:
     ; 3. Ativar as interrupções globais no CPU (limpar bit I, que é o bit 4 do CPSR)
     MRS r0, CPSR
     mov r1, #0x10               ; Máscara para o bit 4 (I)
-    mvn r1, r1                  ; Inverte para obter 0 no bit 4, 1 nos outros
-    and r0, r0, r1              ; Limpa o bit 4 (I = 0 -> Interrupções ativas)
+    orr r0, r0, r1              ; Limpa o bit 4 (I = 0 -> Interrupções ativas)
     MSR CPSR, r0
 
 state_init:
@@ -275,7 +293,8 @@ round_success:
 
     ; Ronda concluída com sucesso!
     bl ptc_stop
-
+    bl delay_250ms
+    bl delay_250ms              ; Pequeno atraso antes de avançar para a próxima ronda
     ; 1. Apagar os quatro LEDs (ausência de toupeiras)
     mov r0, #LED_OFF
     bl escrever_saida
@@ -319,9 +338,17 @@ game_over_won:
 
     b state_init
 
+; -----------------------------------------------------------------------------
+; Rotinas Auxiliares / Subrotinas
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; flash_leds
+;
 ; Entrada:
 ;   r0 = máscara de cores a piscar (ALL_RED ou ALL_GREEN)
 ; Efeitos: Pisca os 4 LEDs bicolor 3 vezes, com período de oscilação de 0.5s.
+; -----------------------------------------------------------------------------
 flash_leds:
     push lr
     push r4
@@ -348,7 +375,11 @@ flash_loop:
     pop r4
     pop pc
 
+; -----------------------------------------------------------------------------
+; delay_250ms (Inspirada no delay de teste_led_bicolor.s)
+;
 ; Pequeno atraso ativo de aproximadamente 250ms (baseado em MCLK = 50 kHz).
+; -----------------------------------------------------------------------------
 delay_250ms:
     push r4
     push r5
@@ -364,9 +395,12 @@ delay_250_int:
     pop r4
     mov pc, lr
 
-
+; -----------------------------------------------------------------------------
+; ptc_init
+;
 ; Configura o pTC para tick de 100ms assumindo CLK de 1 kHz.
 ; TMR = 99 (0x63), TCR = 1 (timer parado/limpo)
+; -----------------------------------------------------------------------------
 ptc_init:
     push lr
     
@@ -377,8 +411,11 @@ ptc_init:
     
     pop pc
 
-
+; -----------------------------------------------------------------------------
+; ptc_start
+;
 ; Arranca o temporizador síncrono pTC (escreve 0 no TCR).
+; -----------------------------------------------------------------------------
 ptc_start:
     mov r1, #PTC_TCR & 0xFF
     movt r1, #(PTC_TCR >> 8) & 0xFF
@@ -386,8 +423,11 @@ ptc_start:
     strb r0, [r1]
     mov pc, lr
 
-
+; -----------------------------------------------------------------------------
+; ptc_stop
+;
 ; Pára e limpa o pTC (escreve 1 no TCR).
+; -----------------------------------------------------------------------------
 ptc_stop:
     mov r1, #PTC_TCR & 0xFF
     movt r1, #(PTC_TCR >> 8) & 0xFF
@@ -414,7 +454,7 @@ ptc_set_tmr:
 ptc_clear_int:
     mov r1, #PTC_TIR & 0xFF
     movt r1, #(PTC_TIR >> 8) & 0xFF
-    mov r0, #0
+    mov r0, #1
     strb r0, [r1]
     mov pc, lr
 
@@ -494,8 +534,10 @@ esperar_largar_loop:
 addr_prev_buttons_el:
     .word prev_buttons
 
+; -----------------------------------------------------------------------------
 ; ler_entrada (Similar a read_input de teste_botao.s)
 ; escrever_saida (Similar a outport_write de lab03.s / escolher_led de teste_led_bicolor.s)
+; -----------------------------------------------------------------------------
 ler_entrada:
     mov r1, #IN_PORT & 0xFF
     movt r1, #(IN_PORT >> 8) & 0xFF
@@ -508,9 +550,12 @@ escrever_saida:
     strb r0, [r1]
     mov pc, lr
 
+; -----------------------------------------------------------------------------
 ; Rotina de Serviço de Interrupção (ISR)
+;
 ; Chamada a cada tick do pTC (100 ms).
 ; Decrementa o countdown_timer na RAM caso seja maior que zero.
+; -----------------------------------------------------------------------------
 interrupt_handler:
     push lr                     ; Guarda o endereço de retorno da interrupção
     push r0
@@ -520,7 +565,7 @@ interrupt_handler:
     ; 1. Reconhecer/limpar a interrupção no hardware do pTC
     mov r1, #PTC_TIR & 0xFF
     movt r1, #(PTC_TIR >> 8) & 0xFF
-    mov r0, #0
+    mov r0, #1
     strb r0, [r1]
 
     ; 2. Decrementar o countdown_timer global caso seja > 0
@@ -543,7 +588,9 @@ int_done:
 addr_countdown_timer_isr:
     .word countdown_timer
 
-
+; -----------------------------------------------------------------------------
+; Secção de Dados Globais (.data)
+; -----------------------------------------------------------------------------
 .data
 
 prev_buttons:
@@ -585,6 +632,9 @@ moles_round_table:
     .word 0x2A                  ; Ronda 9:  Holes 1, 2 & 3 Green (bits 1, 3, 5)
     .word 0xA8                  ; Ronda 10: Holes 2, 3 & 4 Green (bits 3, 5, 7)
 
+; -----------------------------------------------------------------------------
+; Secção do Segmento de Pilha (.stack)
+; -----------------------------------------------------------------------------
 .stack
     .space STACK_SIZE
 stack_top:
