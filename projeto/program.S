@@ -374,17 +374,17 @@ addr_random_state:
 
 ; ----------------- pTC timer     -------------------- 
 ptc_init:
-	mov		r1, #PTC_BASE & 0xFF
-	movt	r1, #(PTC_BASE >> 8) & 0xFF
+    mov     r1, #PTC_BASE & 0xFF
+    movt    r1, #(PTC_BASE >> 8) & 0xFF
 
-    mov     r0, #0x01 
-    strb    r0, [r1, #PTC_TCR] ; Desativar Contagem
+    mov     r0, #0x03           ; bit0=stop, bit1=int enable
+    strb    r0, [r1, #PTC_TCR]  ; parar pTC com interrupções ativas
 
     mov     r0, #100
-    strb    r0, [r1, #PTC_TMR]  ; Colocar 5 no TMR
+    strb    r0, [r1, #PTC_TMR]  ; match = 100 ticks (100ms @ 1kHz)
 
     mov     r0, #0
-    strb    r0, [r1, #PTC_TIR]  ; Limpar TIR
+    strb    r0, [r1, #PTC_TIR]  ; limpar TIR
 
     mov     pc, lr
 
@@ -394,30 +394,72 @@ ptc_start:
     bzs     ptc_start_done
 
     ldr     r1, addr_sleep_count
-    str     r0, [r1, #0]
+    str     r0, [r1, #0]        ; sleep_count = r0
 
-    mov     r0, #1
-    ldr     r1, addr_sleep_running
-    str     r0, [r1, #0]
+    mov     r1, #PTC_BASE & 0xFF
+    movt    r1, #(PTC_BASE >> 8) & 0xFF
 
-	mov		r1, #PTC_BASE & 0xFF
-	movt	r1, #(PTC_BASE >> 8) & 0xFF
-
-
-    mov     r0, #0x01
+    mov     r0, #0x03           ; parar + int enable
     strb    r0, [r1, #PTC_TCR]
 
     mov     r0, #0
-    strb    r0, [r1, #PTC_TIR]
+    strb    r0, [r1, #PTC_TIR]  ; limpar TIR antes de arrancar
 
-    ; Arrancar (TCR=0)
+    mov     r0, #0x02           ; arrancar com int enable (bit1=1, bit0=0)
     strb    r0, [r1, #PTC_TCR]
 
-	ptc_start_done:
+ptc_start_done:
     mov     pc, lr
 
 
+; Retorna r0=1 se sleep terminou (sleep_count == 0), r0=0 se ainda a correr
 ptc_done:
+    ldr     r1, addr_sleep_count
+    ldr     r0, [r1, #0]
+    and     r0, r0, r0          ; seta flags
+    bzs     ptc_done_yes        ; Z=1 → sleep_count == 0 → terminou
+
+    mov     r0, #0              ; ainda a correr
+    mov     pc, lr
+
+ptc_done_yes:
+    mov     r0, #1              ; terminou
+    mov     pc, lr
+
+
+ptc_isr:
+    push    lr
+    push    r0
+    push    r1
+    push    r2
+
+    mov     r1, #PTC_BASE & 0xFF
+    movt    r1, #(PTC_BASE >> 8) & 0xFF
+
+    mov     r0, #0
+    strb    r0, [r1, #PTC_TIR]  ; limpar TIR
+
+    ldr     r2, addr_sleep_count
+    ldr     r0, [r2, #0]
+    and     r0, r0, r0
+    bzs     ptc_isr_exit        ; já era 0, não decrementa
+
+    sub     r0, r0, #1
+    str     r0, [r2, #0]
+
+    and     r0, r0, r0
+    bzc     ptc_isr_exit        ; Z=0 → ainda > 0, continuar
+
+    ; sleep_count chegou a 0: parar pTC
+    mov     r0, #0x03           ; stop + int enable (mantém enable para próximo ptc_start)
+    strb    r0, [r1, #PTC_TCR]
+
+ptc_isr_exit:
+    pop     r2
+    pop     r1
+    pop     r0
+    pop     lr
+    movs    pc, lr
     ldr     r1, addr_sleep_running
     ldr     r0, [r1, #0]
     and     r0, r0, r0
@@ -425,11 +467,6 @@ ptc_done:
 
     mov     r0, #0
     mov     pc, lr
-
-	ptc_done_yes:
-    	mov r0, #1
-    
-	mov     pc, lr
 
 
 sleep:
@@ -442,44 +479,6 @@ sleep:
 		bzc	sleep_loop
 
     pop     pc
-
-ptc_isr:
-    push    lr
-    push    r0
-    push    r1
-    push    r2
-
-	mov		r1, #PTC_BASE & 0xFF
-	movt	r1, #(PTC_BASE >> 8) & 0xFF
-
-    
-    mov     r0, #0
-    strb    r0, [r1, #PTC_TIR] ; Limpa o TIR
-
-    ldr     r2, addr_sleep_count
-    ldr     r0, [r2, #0]
-    sub     r0, r0, #1
-    str     r0, [r2, #0]
-
-    ; 3. Se sleep_count == 0 - parar pTC e marcar como terminado
-    and     r0, r0, r0
-    bzc     ptc_isr_exit        ; ainda > 0, continuar
-
-
-    mov     r0, #0x01
-    strb    r0, [r1, #PTC_TCR]
-
-    ; Marcar como terminado
-    mov     r0, #0
-    ldr     r1, addr_sleep_running
-    str     r0, [r1, #0]
-
-	ptc_isr_exit:
-    pop     r2
-    pop     r1
-    pop     r0
-    pop     lr
-    movs    pc, lr
 
 
 addr_sleep_count:
