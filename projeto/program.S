@@ -143,7 +143,10 @@ round_while:
 round_while_end:
 
 	and 	r6, r6, r6
-	bzc 	main_while_end
+	bzs 	main_while_end
+
+	mov 	r0, #5
+	bl sleep
 
 	mov 	r0, #ALL_LEDS
 	bl 		clear
