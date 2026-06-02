@@ -406,38 +406,36 @@ get_moles:
 
     ; ── Rondas 4+: 2 ou mais toupeiras ───────────────────────────────
 get_moles_multi:
-    ; bit_count = 2 + (rand % (round - 2)), clamp 4
-    mov     r1, #2
-    sub     r1, r4, r1          ; r1 = round - 2
     bl      get_random
     mov     r2, #0x03
-    and     r0, r0, r2          ; rand & 0x03 (aprox % pequeno)
+    and     r0, r0, r2
     mov     r2, #2
-    add     r5, r0, r2          ; r5 = bit_count >= 2
-	mov     r2, #4
+    add     r5, r0, r2          ; r5 = bit_count
+
+    mov     r2, #4
     cmp     r5, r2
-    blt     get_moles_fill      ; se bit_count < 4, não faz clamp
+    blt     get_moles_fill_init
     mov     r5, r2              ; clamp a 4
 
-    mov     r4, #0              ; r4 = resultado acumulado
+get_moles_fill_init:
+    mov     r4, #0              ; r4 = acumulador — AQUI, depois do clamp
 
 get_moles_fill:
     mov     r0, r4
-    bl      popcount            ; r0 = popcount(r4)
+    bl      popcount
     cmp     r0, r5
     bge     get_moles_result
 
     bl      get_random
     mov     r1, #0x03
-    and     r0, r0, r1          ; bit index 0..3
+    and     r0, r0, r1
     ldr     r1, single_moles_addr
-    ldrb    r1, [r1, r0]        ; 1 << index via tabela
+    ldrb    r1, [r1, r0]
     orr     r4, r4, r1
     b       get_moles_fill
 
 get_moles_result:
     mov     r0, r4
-
 get_moles_done:
     pop     r5
     pop     r4
